@@ -1,0 +1,40 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    env: prod
+    project: ulov
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  # FastAPI app — exposed by prometheus-fastapi-instrumentator at /metrics.
+  # The app listens on 127.0.0.1:8499 (PM2 + uvicorn); the container reaches
+  # it via host.docker.internal which we map to host-gateway in the compose
+  # file.
+  - job_name: ulov-api
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+          - host.docker.internal:8499
+        labels:
+          service: api
+          instance: ulov-prod
+
+  # Prometheus self-scrape (sanity check + meta-monitoring).
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  # Alertmanager self-scrape.
+  - job_name: alertmanager
+    static_configs:
+      - targets: [alertmanager:9093]

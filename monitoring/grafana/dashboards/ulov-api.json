@@ -1,0 +1,170 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "API status",
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 4},
+      "id": 1,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}
+          ],
+          "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+        }
+      },
+      "targets": [{"expr": "up{job=\"ulov-api\"}", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Requests / sec (1m)",
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 4},
+      "id": 2,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 2}},
+      "targets": [{"expr": "sum(rate(http_requests_total{job=\"ulov-api\"}[1m]))", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (5xx, 5m)",
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 4},
+      "id": 3,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.01}, {"color": "red", "value": 0.05}]}
+        }
+      },
+      "targets": [{
+        "expr": "sum(rate(http_requests_total{job=\"ulov-api\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"ulov-api\"}[5m])), 1)",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "stat",
+      "title": "P95 latency (5m)",
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 4},
+      "id": 4,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 1}]}
+        }
+      },
+      "targets": [{
+        "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"ulov-api\"}[5m])))",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "stat",
+      "title": "In-flight requests",
+      "gridPos": {"x": 16, "y": 0, "w": 4, "h": 4},
+      "id": 5,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "targets": [{"expr": "sum(http_requests_in_progress{job=\"ulov-api\"})", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Memory (RSS)",
+      "gridPos": {"x": 20, "y": 0, "w": 4, "h": 4},
+      "id": 6,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "decbytes"}},
+      "targets": [{"expr": "process_resident_memory_bytes{job=\"ulov-api\"}", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests / sec by status",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "id": 7,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"]}},
+      "targets": [{
+        "expr": "sum by (status) (rate(http_requests_total{job=\"ulov-api\"}[1m]))",
+        "legendFormat": "{{status}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency percentiles",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "id": 8,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"ulov-api\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"ulov-api\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"ulov-api\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Top 10 endpoints by RPS",
+      "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+      "id": 9,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}},
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "max"]}},
+      "targets": [{
+        "expr": "topk(10, sum by (handler) (rate(http_requests_total{job=\"ulov-api\"}[5m])))",
+        "legendFormat": "{{handler}}",
+        "refId": "A"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory + CPU",
+      "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+      "id": 10,
+      "datasource": {"type": "prometheus", "uid": "PBFA97CFB590B2093"},
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=\"ulov-api\"}",
+          "legendFormat": "memory (B)",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(process_cpu_seconds_total{job=\"ulov-api\"}[1m])",
+          "legendFormat": "CPU (s/s)",
+          "refId": "B"
+        }
+      ]
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 39,
+  "tags": ["ulov", "api"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "ULOV+ API",
+  "uid": "ulov-api",
+  "version": 1,
+  "weekStart": ""
+}

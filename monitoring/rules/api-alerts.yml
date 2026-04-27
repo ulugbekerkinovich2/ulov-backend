@@ -1,0 +1,63 @@
+groups:
+  - name: ulov-api
+    interval: 30s
+    rules:
+      - alert: ApiDown
+        expr: up{job="ulov-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ulov-api
+        annotations:
+          summary: "ULOV+ API ishlamayapti"
+          description: "Prometheus 1+ daqiqa /metrics ni scrape qila olmadi. PM2 / uvicorn jarayoni tekshiring."
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="ulov-api", status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="ulov-api"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: ulov-api
+        annotations:
+          summary: "5xx xatolar 5%'dan oshdi"
+          description: "Oxirgi 5 daqiqada 5xx ulushi {{ $value | humanizePercentage }}. Logs / Sentry tekshiring."
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="ulov-api"}[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: ulov-api
+        annotations:
+          summary: "P95 javob vaqti 1s'dan oshdi"
+          description: "Hozir p95 = {{ $value }}s. Sekin endpoint'larni tekshiring."
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="ulov-api"} > 800 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+          service: ulov-api
+        annotations:
+          summary: "API jarayoni 800 MB+ xotira ishlatmoqda"
+          description: "RSS = {{ $value | humanize1024 }}B. Memory leak ehtimoli bor."
+
+      - alert: NoTrafficForOneHour
+        expr: |
+          sum(rate(http_requests_total{job="ulov-api"}[15m])) == 0
+        for: 1h
+        labels:
+          severity: info
+          service: ulov-api
+        annotations:
+          summary: "API'ga 1 soatdan beri so'rov kelmadi"
+          description: "Reverse proxy / DNS yoki frontend muammosi bo'lishi mumkin."

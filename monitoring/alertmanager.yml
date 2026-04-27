@@ -1,0 +1,62 @@
+# Alertmanager — fan-out to Telegram + email.
+#
+# Native ``telegram_configs`` (Alertmanager 0.26+) handles the bot API for
+# us. To set up:
+#   1. Create a Telegram bot via @BotFather → get the bot token.
+#   2. Start a chat with the bot, get chat ID via
+#      https://api.telegram.org/bot<TOKEN>/getUpdates
+#   3. Export TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in the prod .env so
+#      docker compose interpolates them at start.
+#
+# If those vars are empty the receiver still loads (Alertmanager warns) and
+# nothing gets sent — alerts still fire and are visible in
+# http://localhost:9093.
+
+global:
+  resolve_timeout: 5m
+
+templates:
+  - /etc/alertmanager/templates/*.tmpl
+
+route:
+  receiver: telegram
+  group_by: [alertname, service]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = "critical"
+      receiver: telegram
+      repeat_interval: 30m
+      continue: true
+    - matchers:
+        - severity = "info"
+      receiver: telegram
+      repeat_interval: 24h
+
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token: "${TELEGRAM_BOT_TOKEN}"
+        chat_id: ${TELEGRAM_CHAT_ID:-0}
+        api_url: https://api.telegram.org
+        parse_mode: HTML
+        send_resolved: true
+        message: |
+          {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }} <b>{{ .CommonLabels.alertname }}</b>
+          severity: {{ .CommonLabels.severity }}
+          service: {{ .CommonLabels.service }}
+
+          {{ range .Alerts }}{{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+
+inhibit_rules:
+  # When the API is fully down, suppress secondary alerts (latency / errors)
+  # so we don't drown the channel.
+  - source_matchers:
+      - alertname = "ApiDown"
+    target_matchers:
+      - service = "ulov-api"
+    equal: [service]
