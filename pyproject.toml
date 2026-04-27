@@ -45,7 +45,7 @@ tenacity = ">=8.2,<9"
 # ---- Observability -------------------------------------------------------
 structlog = ">=23.1,<25"
 sentry-sdk = { version = ">=1.32,<2", extras = ["fastapi"] }
-prometheus-fastapi-instrumentator = ">=6.1,<8"
+prometheus-fastapi-instrumentator = ">=6.1,<7"  # 7.x uses `list[str]` (PEP 585), needs Python 3.9+
 
 # ---- Utilities ----------------------------------------------------------
 orjson = ">=3.9,<4"
