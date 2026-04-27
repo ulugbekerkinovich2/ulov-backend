@@ -1,0 +1,126 @@
+[tool.poetry]
+name = "ulov-backend"
+version = "0.1.0"
+description = "ULOV+ backend — auto-service platform (customer + ERP)"
+authors = ["ULOV+ Team"]
+readme = "README.md"
+license = "Proprietary"
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+# Product constraint: Python 3.8.10 — no PEP 604 (`int | None`), no `match`.
+python = ">=3.8.10,<3.9"
+
+# ---- Web framework -------------------------------------------------------
+# 0.103.x is the last FastAPI line that officially supports Python 3.8.
+fastapi = ">=0.103.2,<0.104"
+uvicorn = { version = ">=0.23,<0.28", extras = ["standard"] }
+# Pydantic v1 — v2 would force us to add pydantic-settings and refactor everything.
+pydantic = { version = ">=1.10.13,<2", extras = ["email"] }
+python-multipart = ">=0.0.6,<0.1"
+
+# ---- Database -----------------------------------------------------------
+sqlalchemy = ">=1.4.49,<2"
+alembic = ">=1.12,<2"
+psycopg2-binary = ">=2.9.9,<3"
+# Geo queries (service centres, fuel stations)
+geoalchemy2 = ">=0.14,<0.16"
+
+# ---- Cache / queues / pub-sub -------------------------------------------
+redis = ">=5.0,<6"
+hiredis = ">=2.2,<3"
+arq = ">=0.25,<0.27"
+
+# ---- Security -----------------------------------------------------------
+argon2-cffi = ">=23.1,<24"
+python-jose = { version = ">=3.3,<4", extras = ["cryptography"] }
+
+# ---- Storage (S3 / MinIO) -----------------------------------------------
+boto3 = ">=1.28,<2"
+
+# ---- HTTP / integrations -------------------------------------------------
+httpx = ">=0.24,<0.28"
+tenacity = ">=8.2,<9"
+
+# ---- Observability -------------------------------------------------------
+structlog = ">=23.1,<25"
+sentry-sdk = { version = ">=1.32,<2", extras = ["fastapi"] }
+prometheus-fastapi-instrumentator = ">=6.1,<8"
+
+# ---- Utilities ----------------------------------------------------------
+orjson = ">=3.9,<4"
+python-dotenv = ">=1.0,<2"
+email-validator = ">=2.0,<3"
+phonenumbers = ">=8.13,<9"
+
+[tool.poetry.group.dev.dependencies]
+# Testing
+pytest = ">=7.4,<9"
+pytest-asyncio = ">=0.21,<0.24"
+pytest-cov = ">=4.1,<6"
+httpx = ">=0.24,<0.28"
+factory-boy = ">=3.3,<4"
+freezegun = ">=1.2,<2"
+
+# Linters / formatters
+ruff = ">=0.1,<1"
+black = ">=23.9,<25"
+isort = ">=5.12,<6"
+mypy = ">=1.5,<2"
+
+# Security
+bandit = ">=1.7,<2"
+pip-audit = ">=2.6,<3"
+
+# Test doubles
+fakeredis = ">=2.20,<3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["app", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+select = ["E", "F", "W", "I", "B", "C4", "UP", "N", "S", "ASYNC", "RUF"]
+ignore = [
+    "S101",   # assert in tests is fine
+    "B008",   # FastAPI Depends in defaults is the idiomatic pattern
+    "UP007",  # Optional[X] vs X | None — py3.8 requires Optional
+    "UP045",  # same
+]
+
+[tool.ruff.per-file-ignores]
+"tests/**" = ["S", "B"]
+"alembic/**" = ["E501", "I001"]
+
+[tool.mypy]
+python_version = "3.8"
+strict = false
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q --strict-markers --cov=app --cov-report=term-missing --cov-report=xml"
+markers = [
+    "integration: requires docker-compose services",
+    "slow: long-running test",
+]
+
+[tool.coverage.run]
+branch = true
+omit = ["alembic/*", "tests/*", "app/workers/arq_worker.py"]
