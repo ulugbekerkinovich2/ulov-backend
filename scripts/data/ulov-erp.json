@@ -1,0 +1,800 @@
+{
+    "meta": {
+      "project": "Ulov",
+      "exportedAt": "2026-04-26T13:54:04.946Z",
+      "version": "1.0.0",
+      "description": "Full data export of Ulov demo system. Use to seed databases or reuse in other projects."
+    },
+    "users": [
+      {
+        "id": "1",
+        "username": "admin",
+        "password": "admin123",
+        "name": "Admin",
+        "role": "admin"
+      },
+      {
+        "id": "2",
+        "username": "servis1",
+        "password": "1234",
+        "name": "Abdulla Karimov",
+        "role": "owner",
+        "companyName": "AutoPro Service",
+        "phone": "+998901234567",
+        "preferredServices": [
+          "Moy almashtirish",
+          "Filtr almashtirish",
+          "Konditsioner"
+        ]
+      },
+      {
+        "id": "3",
+        "username": "mexanik1",
+        "password": "1234",
+        "name": "Bobur Toshmatov",
+        "role": "mechanic",
+        "phone": "+998907654321",
+        "companyName": "AutoPro Service"
+      }
+    ],
+    "serviceTypes": [
+      "Moy almashtirish",
+      "Tormoz tizimi",
+      "Dvigatel ta'miri",
+      "Elektrika",
+      "Konditsioner",
+      "Shina montaj",
+      "Diagnostika",
+      "Filtr almashtirish"
+    ],
+    "mechanics": [
+      {
+        "id": "mech_1",
+        "name": "Bobur",
+        "surname": "Toshmatov",
+        "login": "bobur",
+        "password": "1234",
+        "serviceTypes": [
+          "Moy almashtirish",
+          "Tormoz tizimi",
+          "Filtr almashtirish"
+        ],
+        "ownerId": "2",
+        "createdAt": "2025-03-10T00:00:00.000Z"
+      },
+      {
+        "id": "mech_2",
+        "name": "Akmal",
+        "surname": "Yusupov",
+        "login": "akmal",
+        "password": "1234",
+        "serviceTypes": [
+          "Konditsioner",
+          "Elektrika",
+          "Diagnostika"
+        ],
+        "ownerId": "2",
+        "createdAt": "2025-03-12T00:00:00.000Z"
+      }
+    ],
+    "vehicles": [
+      {
+        "id": "v1",
+        "vin": "ABCDEF12345109186",
+        "plateNumber": "01 A 123 BA",
+        "brand": "Chevrolet",
+        "model": "Malibu",
+        "year": 2020,
+        "color": "Oq",
+        "currentMileage": 48000,
+        "photos": [],
+        "ownerName": "Jasur Aliyev",
+        "ownerPhone": "+998901112233",
+        "createdAt": "2025-03-15T00:00:00.000Z",
+        "services": [
+          {
+            "id": "s1",
+            "vehicleId": "v1",
+            "mileage": 45000,
+            "nextRecommendedMileage": 55000,
+            "items": [
+              {
+                "id": "si1",
+                "serviceType": "Moy almashtirish",
+                "parts": [
+                  {
+                    "name": "Motor moyi",
+                    "spec": "5W-30 Sintetik"
+                  },
+                  {
+                    "name": "Moy filtri",
+                    "spec": "OEM filtri"
+                  }
+                ],
+                "notes": "Sintetik moy ishlatildi",
+                "servicePrice": 50000,
+                "partsPrice": 180000
+              }
+            ],
+            "status": "completed",
+            "mechanicName": "Bobur Toshmatov",
+            "createdAt": "2025-03-15T00:00:00.000Z",
+            "startedAt": "2025-03-15T00:00:00.000Z",
+            "completedAt": "2025-03-15T00:00:00.000Z"
+          },
+          {
+            "id": "s2",
+            "vehicleId": "v1",
+            "mileage": 48000,
+            "items": [
+              {
+                "id": "si2",
+                "serviceType": "Tormoz tizimini tekshirish",
+                "parts": [
+                  {
+                    "name": "Tormoz kolodkasi",
+                    "spec": "Old"
+                  },
+                  {
+                    "name": "Tormoz suyuqligi",
+                    "spec": "DOT-4"
+                  }
+                ],
+                "notes": "",
+                "servicePrice": 80000,
+                "partsPrice": 250000
+              }
+            ],
+            "status": "waiting",
+            "createdAt": "2025-03-28T00:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "id": "v2",
+        "vin": "KIAK5123456205432",
+        "plateNumber": "40 B 789 CA",
+        "brand": "Kia",
+        "model": "K5",
+        "year": 2022,
+        "color": "Qora",
+        "currentMileage": 32000,
+        "photos": [],
+        "ownerName": "Shaxzod Nurmatov",
+        "ownerPhone": "+998933445566",
+        "createdAt": "2025-03-27T00:00:00.000Z",
+        "services": [
+          {
+            "id": "s3",
+            "vehicleId": "v2",
+            "mileage": 32000,
+            "items": [
+              {
+                "id": "si3",
+                "serviceType": "Konditsioner tuzatish",
+                "parts": [
+                  {
+                    "name": "Freon",
+                    "spec": "R134a"
+                  },
+                  {
+                    "name": "Kompressor podshipnigi",
+                    "spec": ""
+                  }
+                ],
+                "notes": "",
+                "servicePrice": 150000,
+                "partsPrice": 400000
+              }
+            ],
+            "status": "in-progress",
+            "mechanicName": "Bobur Toshmatov",
+            "createdAt": "2025-03-27T00:00:00.000Z",
+            "startedAt": "2025-03-27T00:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "id": "v3",
+        "vin": "CHEV7654321098765",
+        "plateNumber": "40 C 321 DA",
+        "brand": "Chevrolet",
+        "model": "Tracker",
+        "year": 2023,
+        "color": "Kumush",
+        "currentMileage": 15000,
+        "photos": [],
+        "ownerName": "Shaxzod Nurmatov",
+        "ownerPhone": "+998933445566",
+        "createdAt": "2025-04-01T00:00:00.000Z",
+        "services": [
+          {
+            "id": "s4",
+            "vehicleId": "v3",
+            "mileage": 15000,
+            "items": [
+              {
+                "id": "si4",
+                "serviceType": "Moy almashtirish",
+                "parts": [
+                  {
+                    "name": "Motor moyi",
+                    "spec": "5W-40 Sintetik"
+                  }
+                ],
+                "notes": "",
+                "servicePrice": 50000,
+                "partsPrice": 160000
+              }
+            ],
+            "status": "completed",
+            "mechanicName": "Bobur Toshmatov",
+            "createdAt": "2025-04-01T00:00:00.000Z",
+            "startedAt": "2025-04-01T00:00:00.000Z",
+            "completedAt": "2025-04-01T00:00:00.000Z"
+          }
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "id": "r1",
+        "author": "Sardor A.",
+        "rating": 5,
+        "date": "2025-04-18",
+        "comment": "Juda tez va sifatli xizmat. Rahmat!",
+        "vehicle": "Chevrolet Cobalt",
+        "serviceType": "Moy almashtirish"
+      },
+      {
+        "id": "r2",
+        "author": "Dilshod K.",
+        "rating": 4,
+        "date": "2025-04-15",
+        "comment": "Ish yaxshi, lekin biroz kutdim.",
+        "vehicle": "Hyundai Sonata",
+        "serviceType": "Tormoz tizimi"
+      },
+      {
+        "id": "r3",
+        "author": "Nodira M.",
+        "rating": 5,
+        "date": "2025-04-12",
+        "comment": "Mexaniklar professional. Tavsiya qilaman.",
+        "vehicle": "Kia K5",
+        "serviceType": "Konditsioner"
+      },
+      {
+        "id": "r4",
+        "author": "Bekzod T.",
+        "rating": 3,
+        "date": "2025-04-08",
+        "comment": "Narx biroz qimmat, lekin sifat yaxshi.",
+        "vehicle": "Lacetti",
+        "serviceType": "Diagnostika"
+      },
+      {
+        "id": "r5",
+        "author": "Aziza R.",
+        "rating": 5,
+        "date": "2025-04-02",
+        "comment": "Hammasi a’lo darajada!",
+        "vehicle": "Spark",
+        "serviceType": "Filtr almashtirish"
+      }
+    ],
+    "stories": [],
+    "vehicleBrands": {
+      "topBrands": [
+        {
+          "brand": "Chevrolet",
+          "models": [
+            "Captiva",
+            "Cobalt",
+            "Damas",
+            "Epica",
+            "Equinox",
+            "Lacetti",
+            "Labo",
+            "Malibu",
+            "Malibu 2",
+            "Matiz",
+            "Nexia",
+            "Nexia 2",
+            "Nexia 3",
+            "Onix",
+            "Spark",
+            "Tahoe",
+            "Tico",
+            "Tracker",
+            "TrailBlazer"
+          ]
+        },
+        {
+          "brand": "BYD",
+          "models": [
+            "Song Plus",
+            "Han",
+            "Tang",
+            "Seal",
+            "Dolphin",
+            "Atto 3",
+            "Chazor",
+            "Seagull"
+          ]
+        },
+        {
+          "brand": "KIA",
+          "models": [
+            "Rio",
+            "K5",
+            "Cerato",
+            "Sportage",
+            "Sorento",
+            "Seltos",
+            "Carnival",
+            "Stinger"
+          ]
+        }
+      ],
+      "otherBrands": [
+        {
+          "brand": "AITO",
+          "models": [
+            "M5",
+            "M7",
+            "M9"
+          ]
+        },
+        {
+          "brand": "Audi",
+          "models": [
+            "A3",
+            "A4",
+            "A6",
+            "A7",
+            "A8",
+            "Q3",
+            "Q5",
+            "Q7",
+            "Q8",
+            "e-tron"
+          ]
+        },
+        {
+          "brand": "Bestune",
+          "models": [
+            "T77",
+            "T99",
+            "B70",
+            "NAT"
+          ]
+        },
+        {
+          "brand": "BMW",
+          "models": [
+            "3 Series",
+            "5 Series",
+            "7 Series",
+            "X1",
+            "X3",
+            "X5",
+            "X6",
+            "X7"
+          ]
+        },
+        {
+          "brand": "Cadillac",
+          "models": [
+            "Escalade",
+            "CT5",
+            "CT6",
+            "XT4",
+            "XT5",
+            "XT6"
+          ]
+        },
+        {
+          "brand": "Changan",
+          "models": [
+            "CS35 Plus",
+            "CS55 Plus",
+            "CS75 Plus",
+            "CS95",
+            "Uni-K",
+            "Uni-T",
+            "Uni-V",
+            "Eado"
+          ]
+        },
+        {
+          "brand": "Chery",
+          "models": [
+            "Tiggo 4",
+            "Tiggo 7 Pro",
+            "Tiggo 8 Pro",
+            "Arrizo 6",
+            "Arrizo 8",
+            "Omoda C5"
+          ]
+        },
+        {
+          "brand": "Daewoo",
+          "models": [
+            "Damas",
+            "Gentra",
+            "Labo",
+            "Matiz",
+            "Nexia",
+            "Tico"
+          ]
+        },
+        {
+          "brand": "Dongfeng",
+          "models": [
+            "Rich",
+            "AX7",
+            "Huge",
+            "Mengshi",
+            "E70",
+            "Box"
+          ]
+        },
+        {
+          "brand": "Ford",
+          "models": [
+            "Explorer",
+            "Mustang",
+            "Ranger",
+            "F-150",
+            "Escape",
+            "Focus",
+            "Mondeo"
+          ]
+        },
+        {
+          "brand": "GAC",
+          "models": [
+            "GS3",
+            "GS4",
+            "GS8",
+            "Emkoo",
+            "Aion S",
+            "Aion Y"
+          ]
+        },
+        {
+          "brand": "GAZ",
+          "models": [
+            "Gazel",
+            "Gazel Next",
+            "Sobol",
+            "3110",
+            "3102",
+            "53"
+          ]
+        },
+        {
+          "brand": "Haval",
+          "models": [
+            "Jolion",
+            "Dargo",
+            "F7",
+            "F7x",
+            "H6",
+            "H9"
+          ]
+        },
+        {
+          "brand": "Hongqi",
+          "models": [
+            "H5",
+            "H9",
+            "HS5",
+            "HS7",
+            "E-HS9",
+            "HQ9"
+          ]
+        },
+        {
+          "brand": "Hyundai",
+          "models": [
+            "Accent",
+            "Elantra",
+            "Sonata",
+            "Tucson",
+            "Santa Fe",
+            "Palisade",
+            "Creta",
+            "Venue"
+          ]
+        },
+        {
+          "brand": "JAC",
+          "models": [
+            "JS2",
+            "JS3",
+            "JS4",
+            "JS6",
+            "T6",
+            "T8",
+            "N56",
+            "Sunray"
+          ]
+        },
+        {
+          "brand": "Lada",
+          "models": [
+            "Granta",
+            "Vesta",
+            "Niva",
+            "Niva Legend",
+            "Largus",
+            "XRAY",
+            "Priora",
+            "2107"
+          ]
+        },
+        {
+          "brand": "Land Rover",
+          "models": [
+            "Defender",
+            "Discovery",
+            "Range Rover",
+            "Range Rover Sport",
+            "Range Rover Velar",
+            "Evoque"
+          ]
+        },
+        {
+          "brand": "Leapmotor",
+          "models": [
+            "T03",
+            "C01",
+            "C10",
+            "C11",
+            "C16",
+            "S01"
+          ]
+        },
+        {
+          "brand": "Lexus",
+          "models": [
+            "ES",
+            "IS",
+            "LS",
+            "NX",
+            "RX",
+            "GX",
+            "LX",
+            "UX"
+          ]
+        },
+        {
+          "brand": "Mercedes",
+          "models": [
+            "C-Class",
+            "E-Class",
+            "S-Class",
+            "GLA",
+            "GLC",
+            "GLE",
+            "GLS",
+            "G-Class",
+            "Sprinter"
+          ]
+        },
+        {
+          "brand": "Nissan",
+          "models": [
+            "Almera",
+            "Sentra",
+            "Qashqai",
+            "X-Trail",
+            "Pathfinder",
+            "Patrol",
+            "Note",
+            "Juke"
+          ]
+        },
+        {
+          "brand": "Porsche",
+          "models": [
+            "Cayenne",
+            "Macan",
+            "Panamera",
+            "911",
+            "Taycan"
+          ]
+        },
+        {
+          "brand": "Ravon",
+          "models": [
+            "R2",
+            "R3",
+            "R4",
+            "Gentra"
+          ]
+        },
+        {
+          "brand": "Skoda",
+          "models": [
+            "Octavia",
+            "Superb",
+            "Kodiaq",
+            "Karoq",
+            "Rapid",
+            "Fabia",
+            "Kamiq"
+          ]
+        },
+        {
+          "brand": "Toyota",
+          "models": [
+            "Camry",
+            "Corolla",
+            "RAV4",
+            "Land Cruiser",
+            "Land Cruiser Prado",
+            "Hilux",
+            "Fortuner",
+            "Highlander",
+            "Yaris"
+          ]
+        },
+        {
+          "brand": "VAZ",
+          "models": [
+            "2101",
+            "2103",
+            "2106",
+            "2107",
+            "2108",
+            "2109",
+            "2110",
+            "2114",
+            "2115",
+            "2121 Niva"
+          ]
+        },
+        {
+          "brand": "Volkswagen",
+          "models": [
+            "Polo",
+            "Golf",
+            "Passat",
+            "Tiguan",
+            "Touareg",
+            "Jetta",
+            "Atlas",
+            "ID.4"
+          ]
+        },
+        {
+          "brand": "XPENG",
+          "models": [
+            "G3",
+            "G6",
+            "G9",
+            "P5",
+            "P7"
+          ]
+        }
+      ]
+    },
+    "themeTokens": {
+      "light": {
+        "background": "0 0% 100%",
+        "foreground": "222 47% 11%",
+        "primary": "262 83% 58%",
+        "primary-foreground": "0 0% 100%",
+        "accent": "292 84% 61%",
+        "note": "See src/index.css for full token list"
+      },
+      "dark": {
+        "background": "222 47% 6%",
+        "foreground": "210 40% 98%",
+        "primary": "262 83% 65%",
+        "accent": "292 84% 68%"
+      },
+      "gradients": {
+        "primary": "linear-gradient(135deg, hsl(262 83% 58%), hsl(292 84% 61%))"
+      }
+    },
+    "assets": [
+      {
+        "name": "logo.jpg",
+        "path": "assets/logo.jpg",
+        "bytes": 14558,
+        "publishedUrl": "https://ulov.lovable.app/brand/logo.jpg",
+        "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/logo.jpg"
+      },
+      {
+        "name": "ulov-logo-blue.png",
+        "path": "assets/ulov-logo-blue.png",
+        "bytes": 63512,
+        "publishedUrl": "https://ulov.lovable.app/brand/ulov-logo-blue.png",
+        "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/ulov-logo-blue.png"
+      },
+      {
+        "name": "ulov-logo-white.png",
+        "path": "assets/ulov-logo-white.png",
+        "bytes": 45106,
+        "publishedUrl": "https://ulov.lovable.app/brand/ulov-logo-white.png",
+        "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/ulov-logo-white.png"
+      },
+      {
+        "name": "ulov-logo.png",
+        "path": "assets/ulov-logo.png",
+        "bytes": 20452,
+        "publishedUrl": "https://ulov.lovable.app/brand/ulov-logo.png",
+        "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/ulov-logo.png"
+      }
+    ],
+    "images": {
+      "logos": [
+        {
+          "name": "ulov-logo.png",
+          "publishedUrl": "https://ulov.lovable.app/brand/ulov-logo.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/ulov-logo.png"
+        },
+        {
+          "name": "ulov-logo-blue.png",
+          "publishedUrl": "https://ulov.lovable.app/brand/ulov-logo-blue.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/ulov-logo-blue.png"
+        },
+        {
+          "name": "ulov-logo-white.png",
+          "publishedUrl": "https://ulov.lovable.app/brand/ulov-logo-white.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/ulov-logo-white.png"
+        },
+        {
+          "name": "logo.jpg",
+          "publishedUrl": "https://ulov.lovable.app/brand/logo.jpg",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/brand/logo.jpg"
+        }
+      ],
+      "investorWallpapers": [
+        {
+          "name": "ulov-investor-01-hero.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-01-hero.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-01-hero.png"
+        },
+        {
+          "name": "ulov-investor-01-hero-clean.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-01-hero-clean.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-01-hero-clean.png"
+        },
+        {
+          "name": "ulov-investor-02-trio.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-02-trio.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-02-trio.png"
+        },
+        {
+          "name": "ulov-investor-02-trio-clean.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-02-trio-clean.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-02-trio-clean.png"
+        },
+        {
+          "name": "ulov-investor-03-perspective.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-03-perspective.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-03-perspective.png"
+        },
+        {
+          "name": "ulov-investor-03-perspective-clean.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-03-perspective-clean.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-03-perspective-clean.png"
+        },
+        {
+          "name": "ulov-investor-04-floating.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-04-floating.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-04-floating.png"
+        },
+        {
+          "name": "ulov-investor-04-floating-clean.png",
+          "publishedUrl": "https://ulov.lovable.app/investor/ulov-investor-04-floating-clean.png",
+          "previewUrl": "https://id-preview--45f3f488-1488-41a1-b275-2bd7bc0efc37.lovable.app/investor/ulov-investor-04-floating-clean.png"
+        }
+      ]
+    }
+  }
