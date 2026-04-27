@@ -48,6 +48,9 @@ def _candidate_paths() -> list:
     env = os.environ.get("ULOV_ERP_PATH")
     if env:
         out.append(Path(env))
+    # Bundled with the repo — first preference.
+    out.append(here.parent / "data" / "ulov-erp.json")
+    # Legacy / dev locations.
     out.append(here.parent.parent.parent / "ulov-erp.json")
     out.append(here.parent.parent / "ulov-erp.json")
     out.append(Path("/ulov-erp.json"))

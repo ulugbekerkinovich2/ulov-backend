@@ -52,7 +52,29 @@ from app.modules.services.models import Service, ServiceItem  # noqa: E402
 from app.modules.sos.models import SosProvider  # noqa: E402
 from app.modules.users.models import User  # noqa: E402
 
-DATA_PATH = Path(__file__).resolve().parent.parent.parent / "data.json"
+def _resolve_data_path() -> Path:
+    """Find ``data.json`` in candidate locations (bundled first)."""
+    import os
+
+    here = Path(__file__).resolve()
+    candidates: list = []
+    env = os.environ.get("ULOV_DATA_PATH")
+    if env:
+        candidates.append(Path(env))
+    # Bundled with the repo — first preference.
+    candidates.append(here.parent / "data" / "data.json")
+    # Legacy / dev locations.
+    candidates.append(here.parent.parent.parent / "data.json")
+    candidates.append(here.parent.parent / "data.json")
+    candidates.append(Path("/data.json"))
+    candidates.append(Path("/Users/m3/Documents/ulov-plus/data.json"))
+    for p in candidates:
+        if p.exists():
+            return p
+    return candidates[0]  # let downstream raise a sensible FileNotFoundError
+
+
+DATA_PATH = _resolve_data_path()
 
 DEMO_CUSTOMER_PHONE = "+998901234567"
 DEMO_OWNER_PHONE = "+998900000001"
