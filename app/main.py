@@ -17,7 +17,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
-from prometheus_fastapi_instrumentator import Instrumentator
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 
@@ -168,13 +167,6 @@ def create_app() -> FastAPI:
             "env": settings.APP_ENV,
             "docs": "/docs",
         }
-
-    # ---- Metrics (Prometheus) -----------------------------------------------
-    Instrumentator(
-        should_group_status_codes=True,
-        should_ignore_untemplated=True,
-        excluded_handlers=["/health/.*", "/metrics"],
-    ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
     return app
 
