@@ -1,0 +1,21 @@
+# Development dependencies
+# Install prod deps first: pip install -r requirements.txt
+-r requirements.txt
+
+# Testing
+pytest>=7.4,<9
+pytest-asyncio>=0.21,<0.24
+pytest-cov>=4.1,<6
+factory-boy>=3.3,<4
+freezegun>=1.2,<2
+fakeredis>=2.20,<3
+
+# Linters / formatters
+ruff>=0.1,<1
+black>=23.9,<25
+isort>=5.12,<6
+mypy>=1.5,<2
+
+# Security
+bandit>=1.7,<2
+pip-audit>=2.6,<3
