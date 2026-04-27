@@ -1,0 +1,80 @@
+# Monitoring stack for the ULOV+ backend.
+#
+# Usage on the prod server:
+#   cd /var/www/workers/ulov/backend
+#   docker compose -f docker-compose.monitoring.yml up -d
+#
+# All three services expose only on 127.0.0.1 — Grafana is fronted by nginx
+# at https://grafana.misterdev.uz with Let's Encrypt + basic-auth.
+# Backend runs under PM2 on the host (port 8499); Prometheus reaches it
+# through ``host.docker.internal`` (mapped via ``extra_hosts``).
+#
+# Retention: 15 days at 15s scrape ≈ ~3 GB disk. Tune ``--storage.tsdb.retention.time``
+# below if you have less.
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: ulov-prometheus
+    restart: unless-stopped
+    user: "0:0"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--storage.tsdb.retention.size=5GB"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/rules:/etc/prometheus/rules:ro
+      - prom_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: ulov-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    environment:
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      TELEGRAM_CHAT_ID: "${TELEGRAM_CHAT_ID:-}"
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: ulov-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_SERVER_ROOT_URL: "${GRAFANA_ROOT_URL:-https://grafana.misterdev.uz}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_INSTALL_PLUGINS: ""
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  prom_data:
+  grafana_data:
+  alertmanager_data:
