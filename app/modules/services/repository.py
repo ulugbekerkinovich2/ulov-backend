@@ -75,12 +75,20 @@ def list_for_center(
     return list(db.execute(stmt).scalars())
 
 
-def list_for_car(db: Session, car_id: UUIDLike) -> List[Service]:
+def list_for_car(
+    db: Session,
+    car_id: UUIDLike,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[Service]:
     stmt = (
         select(Service)
         .where(Service.car_id == car_id)
         .where(Service.deleted_at.is_(None))
         .order_by(Service.created_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     return list(db.execute(stmt).scalars())
 
