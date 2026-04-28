@@ -11,12 +11,17 @@ level async function so Arq can reference it by name.
 
 from __future__ import annotations
 
+from arq import cron
 from arq.connections import RedisSettings
 
 from app.config import settings
 from app.core.logging import configure_logging, get_logger
 
 log = get_logger(__name__)
+
+
+async def health_check(ctx: dict) -> None:
+    log.info("arq_worker_health_check")
 
 
 async def startup(ctx: dict) -> None:
@@ -49,7 +54,7 @@ class WorkerSettings:
     # the worker starts, connects, and idles.
     functions: list = []
 
-    cron_jobs: list = []
+    cron_jobs = [cron(health_check, hour=set(range(24)), minute=0)]
 
     redis_settings = _redis_settings()
     on_startup = startup
