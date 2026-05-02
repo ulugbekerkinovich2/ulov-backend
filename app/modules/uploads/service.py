@@ -17,6 +17,7 @@ import uuid
 from typing import Dict, Optional, Tuple, Union
 from uuid import UUID
 
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -27,7 +28,7 @@ from app.modules.cars import repository as cars_repo
 from app.modules.service_centers import repository as centers_repo
 from app.modules.service_centers import service as centers_svc
 from app.modules.uploads.client import get_s3_client, public_url_for
-from app.modules.uploads.schemas import ALLOWED_CONTENT_TYPES
+from app.modules.uploads.schemas import ALLOWED_CONTENT_TYPES, UPLOAD_KINDS
 from app.modules.users import repository as users_repo
 
 UUIDLike = Union[UUID, str]
@@ -192,5 +193,82 @@ def confirm(
 
     log.info(
         "upload_confirmed", kind=kind, user_id=str(user.id), key=key
+    )
+    return public, entity_id
+
+
+# ---------------------------------------------------------------------------
+# Server-side direct upload (browser → API → S3)
+# ---------------------------------------------------------------------------
+def upload_direct(
+    db: Session,
+    user: CurrentUser,
+    *,
+    kind: str,
+    file: UploadFile,
+    entity_id: Optional[UUIDLike],
+) -> Tuple[str, Optional[UUIDLike]]:
+    """Stream a multipart file to S3/R2 from the API.
+
+    Used when the browser can't reach object storage directly (CORS,
+    captive networks, etc). Validates type/size, uploads, and applies the
+    same DB write that ``confirm`` would.
+    """
+    if kind not in UPLOAD_KINDS:
+        raise ValidationError("unsupported kind", code="UPLOAD_KIND_INVALID")
+
+    content_type = (file.content_type or "").lower()
+    if content_type not in ALLOWED_CONTENT_TYPES:
+        raise ValidationError(
+            "content_type not allowed", code="UPLOAD_CONTENT_TYPE_INVALID"
+        )
+
+    _assert_can_upload(db, kind, user, entity_id)
+
+    ext = _ext_for(content_type, file.filename)
+    key = _key_for(kind, user, entity_id=entity_id, ext=ext)
+
+    body = file.file.read()
+    size_bytes = len(body)
+    if size_bytes <= 0:
+        raise ValidationError("empty upload", code="UPLOAD_EMPTY")
+    if size_bytes > settings.S3_MAX_UPLOAD_BYTES:
+        raise ValidationError(
+            "file too large",
+            code="UPLOAD_TOO_LARGE",
+            details={"max_bytes": settings.S3_MAX_UPLOAD_BYTES},
+        )
+
+    s3 = get_s3_client()
+    s3.put_object(
+        Bucket=settings.S3_BUCKET,
+        Key=key,
+        Body=body,
+        ContentType=content_type,
+    )
+
+    public = public_url_for(key)
+
+    if kind == "avatar":
+        users_repo.update_fields(db, user.id, avatar_url=public)
+    elif kind == "car_photo" and entity_id is not None:
+        cars_repo.update_fields(db, entity_id, photo_url=public)
+    elif kind == "center_avatar":
+        centers_repo.update_fields(db, entity_id, avatar_url=public)
+    elif kind == "center_gallery":
+        center = centers_repo.get_by_id(db, entity_id)
+        existing = list(center.gallery_urls or [])
+        if public not in existing:
+            existing.append(public)
+            existing = existing[-5:]
+            centers_repo.update_fields(db, entity_id, gallery_urls=existing)
+    # service_photo / draft car_photo: no DB write here.
+
+    log.info(
+        "upload_direct",
+        kind=kind,
+        user_id=str(user.id),
+        key=key,
+        size=size_bytes,
     )
     return public, entity_id
