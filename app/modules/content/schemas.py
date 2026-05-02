@@ -43,6 +43,9 @@ class StoryOut(BaseModel):
     discount_label: Optional[str]
     valid_until: Optional[datetime]
     created_at: datetime
+    # Filled in by the route handler from per-user Redis state — defaults to
+    # False for unauthenticated callers and stories the user hasn't opened.
+    is_read: bool = False
 
     class Config:
         orm_mode = True
