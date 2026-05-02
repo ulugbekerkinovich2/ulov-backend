@@ -441,14 +441,25 @@ async def _ws_pump(ws: WebSocket, redis: Redis, channels: List[str]) -> None:
     cancelled subscription terminates the consumer.
     """
     async def _consume() -> None:
-        async for evt in subscribe(redis, channels):
-            await ws.send_text(json.dumps(evt, default=str))
+        try:
+            async for evt in subscribe(redis, channels):
+                await ws.send_text(json.dumps(evt, default=str))
+        except WebSocketDisconnect:
+            return
+        except Exception:  # noqa: BLE001
+            # Redis hiccup / cancellation — let the wait loop tear down.
+            return
 
     async def _drain_inbound() -> None:
         # We don't act on inbound frames — just keep reading so a client
-        # disconnect surfaces immediately as WebSocketDisconnect.
-        while True:
-            await ws.receive_text()
+        # disconnect (1000, 1001 going away, etc.) surfaces here. Swallow
+        # WebSocketDisconnect inside the task so it doesn't bubble up as an
+        # "unhandled task exception" in the asyncio default handler.
+        try:
+            while True:
+                await ws.receive_text()
+        except WebSocketDisconnect:
+            return
 
     consumer = asyncio.create_task(_consume())
     drainer = asyncio.create_task(_drain_inbound())
