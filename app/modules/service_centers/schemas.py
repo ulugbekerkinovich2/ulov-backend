@@ -23,6 +23,7 @@ class ServiceCenterCreateIn(BaseModel):
     schedule: Dict[str, Any] = Field(default_factory=dict)
     services: List[str] = Field(default_factory=list)
     avatar_url: Optional[str] = Field(None, max_length=500)
+    gallery_urls: List[str] = Field(default_factory=list, max_items=5)
 
     @validator("services", each_item=True)
     def _strip_service(cls, v: str) -> str:  # noqa: N805
@@ -43,6 +44,7 @@ class ServiceCenterPatchIn(BaseModel):
     schedule: Optional[Dict[str, Any]] = None
     services: Optional[List[str]] = None
     avatar_url: Optional[str] = Field(None, max_length=500)
+    gallery_urls: Optional[List[str]] = Field(None, max_items=5)
 
 
 class ServiceCenterOut(BaseModel):
@@ -56,6 +58,7 @@ class ServiceCenterOut(BaseModel):
     schedule: Dict[str, Any]
     services: List[str]
     avatar_url: Optional[str]
+    gallery_urls: List[str] = Field(default_factory=list)
     subscription_plan_id: Optional[UUID]
     subscription_until: Optional[str]
     created_at: datetime

@@ -16,11 +16,11 @@ ALLOWED_CONTENT_TYPES = {
     "image/heif",
 }
 
-UPLOAD_KINDS = {"avatar", "car_photo", "center_avatar", "service_photo"}
+UPLOAD_KINDS = {"avatar", "car_photo", "center_avatar", "center_gallery", "service_photo"}
 
 
 class PresignIn(BaseModel):
-    kind: str = Field(..., description="One of: avatar, car_photo, center_avatar, service_photo")
+    kind: str = Field(..., description="One of: avatar, car_photo, center_avatar, center_gallery, service_photo")
     content_type: str = Field(..., min_length=3, max_length=64)
     size_bytes: int = Field(..., ge=1)
     # Owner-supplied filename — used only to pick the extension.

@@ -51,6 +51,7 @@ def _key_for(
         "avatar": ("avatars", str(user.id)),
         "car_photo": ("cars", str(entity_id or uuid.uuid4())),
         "center_avatar": ("centers", str(entity_id or uuid.uuid4())),
+        "center_gallery": ("centers", str(entity_id or uuid.uuid4()) + "/gallery"),
         "service_photo": ("services", str(entity_id or uuid.uuid4())),
     }[kind]
     return f"{parts[0]}/{parts[1]}/{uuid.uuid4().hex}.{ext}"
@@ -76,10 +77,10 @@ def _assert_can_upload(
         if str(car.owner_id) != str(user.id) and user.role != "admin":
             raise ForbiddenError("Not your car", code="CAR_NOT_OWNER")
         return
-    if kind == "center_avatar":
+    if kind in ("center_avatar", "center_gallery"):
         if entity_id is None:
             raise ValidationError(
-                "entity_id required for centre avatar", code="UPLOAD_ENTITY_REQUIRED"
+                "entity_id required for centre photos", code="UPLOAD_ENTITY_REQUIRED"
             )
         center = centers_repo.get_by_id(db, entity_id)
         if center is None:
@@ -169,6 +170,15 @@ def confirm(
         cars_repo.update_fields(db, entity_id, photo_url=public)
     elif kind == "center_avatar":
         centers_repo.update_fields(db, entity_id, avatar_url=public)
+    elif kind == "center_gallery":
+        # Append to gallery_urls (capped at 5). The centre row is fetched fresh
+        # so we don't clobber concurrent additions.
+        center = centers_repo.get_by_id(db, entity_id)
+        existing = list(center.gallery_urls or [])
+        if public not in existing:
+            existing.append(public)
+            existing = existing[-5:]
+            centers_repo.update_fields(db, entity_id, gallery_urls=existing)
     # service_photo: caller chains POST /services/{id}/condition-photos.
 
     log.info(

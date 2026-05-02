@@ -84,6 +84,7 @@ def create(db: Session, user: CurrentUser, data: Dict[str, Any]) -> ServiceCente
         schedule=data.get("schedule") or {},
         services=data.get("services") or [],
         avatar_url=data.get("avatar_url"),
+        gallery_urls=data.get("gallery_urls") or [],
     )
     log.info("center_created", center_id=str(center.id), owner=str(user.id))
     return center
@@ -96,7 +97,7 @@ def patch(
     _assert_can_mutate(center, user)
 
     payload: Dict[str, Any] = {}
-    for k in ("name", "phone", "address", "description", "avatar_url", "schedule", "services"):
+    for k in ("name", "phone", "address", "description", "avatar_url", "schedule", "services", "gallery_urls"):
         if k in data and data[k] is not None:
             payload[k] = data[k]
 

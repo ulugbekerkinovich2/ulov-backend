@@ -33,6 +33,12 @@ class ServiceCenter(UUIDMixin, TimestampMixin, Base):
 
     avatar_url = Column(String(500), nullable=True)
 
+    # Up to 5 gallery photos for the centre's profile page. Stored as a flat
+    # array of public R2 URLs; ordering is the upload order.
+    gallery_urls = Column(
+        ARRAY(String(500)), nullable=False, server_default=text("'{}'::text[]")
+    )
+
     # Billing — populated by Phase 6. Left nullable for now.
     subscription_plan_id = Column(UUID(as_uuid=True), nullable=True)
     subscription_until = Column(String(32), nullable=True)  # ISO ts; tightened P6
