@@ -42,6 +42,53 @@ def _to_dict(station: FuelStation, distance_m: float) -> Dict[str, Any]:
 
 
 @router.get(
+    "/prices/current",
+    summary="Median current price per fuel type across all stations",
+)
+def current_prices(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Aggregate current fuel prices across every station with a price set.
+
+    Used by the user app's home-screen widget — the per-station detail still
+    comes from ``GET /fuel-stations``. We return medians (not means) so a
+    single mis-typed entry can't skew the headline number.
+    """
+    rows = db.execute(select(FuelStation)).scalars().all()
+    buckets: Dict[str, List[float]] = {}
+    for s in rows:
+        prices = s.prices or {}
+        for code, raw in prices.items():
+            if raw is None:
+                continue
+            try:
+                value = float(raw)
+            except (TypeError, ValueError):
+                continue
+            if value <= 0:
+                continue
+            buckets.setdefault(code, []).append(value)
+
+    items: List[Dict[str, Any]] = []
+    for code, values in buckets.items():
+        values.sort()
+        n = len(values)
+        median = (
+            (values[n // 2 - 1] + values[n // 2]) / 2
+            if n % 2 == 0
+            else values[n // 2]
+        )
+        items.append({
+            "code": code,
+            "price": round(median, 2),
+            "samples": n,
+            # Historical delta requires a price-history table we don't keep
+            # yet. Emit zero so the UI can show a neutral indicator.
+            "delta": 0.0,
+        })
+    items.sort(key=lambda x: x["code"])
+    return {"items": items}
+
+
+@router.get(
     "",
     response_model=List[Dict[str, Any]],
     summary="Find fuel stations within a radius (optionally filtered by fuel type)",
