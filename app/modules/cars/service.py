@@ -58,6 +58,56 @@ def get_owned(db: Session, car_id: UUIDLike, owner_id: UUIDLike) -> Car:
     return car
 
 
+def create_walkin_car(
+    db: Session,
+    staff,
+    *,
+    owner_phone: str,
+    owner_name: Optional[str],
+    car_data: Dict[str, Any],
+) -> Car:
+    """Staff-side car creation for a walk-in customer.
+
+    Looks up the owner by phone; creates a placeholder customer account if
+    none exists (random password — the customer can recover via OTP). Then
+    delegates to :func:`create` so plate / VIN uniqueness and mileage seeding
+    behave exactly the same as a self-serve car add.
+    """
+    import secrets
+
+    from app.core.security import hash_password
+    from app.modules.auth import repository as auth_repo
+
+    owner = auth_repo.get_user_by_phone(db, owner_phone)
+    if owner is None:
+        owner = auth_repo.create_user(
+            db,
+            phone=owner_phone,
+            password_hash=hash_password(secrets.token_urlsafe(16)),
+            full_name=owner_name,
+            role="customer",
+        )
+        log.info(
+            "walkin_user_created",
+            user_id=str(owner.id),
+            phone=owner_phone,
+            by_staff=str(staff.id),
+        )
+    elif owner_name and not owner.full_name:
+        # Don't clobber an existing name — only fill it in if blank.
+        owner.full_name = owner_name
+        db.flush()
+
+    car = create(db, owner.id, car_data)
+    log.info(
+        "walkin_car_created",
+        car_id=str(car.id),
+        owner_id=str(owner.id),
+        by_staff=str(staff.id),
+    )
+    return car
+
+
 def create(db: Session, owner_id: UUIDLike, data: Dict[str, Any]) -> Car:
     plate = data["plate"]
     plate_type = data.get("plate_type") or detect_plate_type(plate).value

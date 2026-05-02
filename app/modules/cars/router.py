@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.deps import CurrentUser, get_current_customer, get_db
+from app.deps import CurrentUser, get_current_customer, get_current_staff, get_db
 from app.modules.cars import service as svc
 from app.modules.cars.schemas import (
     CarCreateIn,
@@ -16,6 +16,7 @@ from app.modules.cars.schemas import (
     CarPatchIn,
     MileageReadingIn,
     RecommendationsOut,
+    WalkinCarIn,
 )
 
 router = APIRouter()
@@ -41,6 +42,32 @@ def create_car(
     db: Session = Depends(get_db),
 ) -> CarOut:
     car = svc.create(db, user.id, body.dict(exclude_unset=False))
+    return CarOut.from_orm(car)
+
+
+@router.post(
+    "/walkin",
+    response_model=CarOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Staff: register a walk-in customer's car (creates the customer if needed)",
+)
+def create_walkin(
+    body: WalkinCarIn,
+    staff: CurrentUser = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+) -> CarOut:
+    """Used by centre staff when a customer arrives without an account yet.
+    The owner is found by phone (or created with a random password); the car
+    is then created in their garage. The customer can later reset the password
+    via the standard OTP flow.
+    """
+    car = svc.create_walkin_car(
+        db,
+        staff,
+        owner_phone=body.owner_phone,
+        owner_name=body.owner_name,
+        car_data=body.car_payload(),
+    )
     return CarOut.from_orm(car)
 
 

@@ -79,6 +79,31 @@ class CarCreateIn(BaseModel):
 
     photo_url: Optional[str] = Field(None, max_length=500)
 
+
+class WalkinCarIn(CarCreateIn):
+    """Staff-side payload for registering a walk-in customer's car.
+
+    Re-uses ``CarCreateIn``'s validation for the vehicle fields and adds the
+    owner's phone (mandatory; we look the customer up by phone, creating a
+    placeholder account if none exists) and an optional display name.
+    """
+
+    owner_phone: str = Field(..., min_length=4, max_length=20)
+    owner_name: Optional[str] = Field(None, max_length=255)
+
+    @validator("owner_phone")
+    def _norm_owner_phone(cls, v: str) -> str:  # noqa: N805
+        from app.core.phone import normalize_phone
+
+        return normalize_phone(v)
+
+    def car_payload(self) -> dict:
+        """Strip the owner-only fields so the result fits ``CarCreateIn``."""
+        data = self.dict(exclude_unset=False)
+        data.pop("owner_phone", None)
+        data.pop("owner_name", None)
+        return data
+
     @validator("plate")
     def _norm_plate(cls, v: str, values: dict) -> str:  # noqa: N805
         return _norm_plate_with_type(v, values)
