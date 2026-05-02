@@ -47,9 +47,12 @@ def _ext_for(content_type: str, filename: Optional[str]) -> str:
 def _key_for(
     kind: str, user: CurrentUser, *, entity_id: Optional[UUIDLike], ext: str
 ) -> str:
+    # Draft car_photo uploads (no entity_id yet) live under the user's namespace
+    # so they're trivially attributable and easy to garbage-collect later.
+    car_photo_scope = str(entity_id) if entity_id else f"_drafts/{user.id}"
     parts = {
         "avatar": ("avatars", str(user.id)),
-        "car_photo": ("cars", str(entity_id or uuid.uuid4())),
+        "car_photo": ("cars", car_photo_scope),
         "center_avatar": ("centers", str(entity_id or uuid.uuid4())),
         "center_gallery": ("centers", str(entity_id or uuid.uuid4()) + "/gallery"),
         "service_photo": ("services", str(entity_id or uuid.uuid4())),
@@ -67,10 +70,13 @@ def _assert_can_upload(
         # Anyone may upload their own avatar.
         return
     if kind == "car_photo":
+        # Two valid modes:
+        #   * entity_id set     → editing an existing car; verify ownership
+        #     and write photo_url on confirm.
+        #   * entity_id is None → "draft" upload before the car row exists;
+        #     the client includes the returned public_url in POST /cars.
         if entity_id is None:
-            raise ValidationError(
-                "entity_id required for car photos", code="UPLOAD_ENTITY_REQUIRED"
-            )
+            return
         car = cars_repo.get_by_id(db, entity_id)
         if car is None:
             raise NotFoundError("Car not found", code="CAR_NOT_FOUND")
@@ -167,7 +173,10 @@ def confirm(
     if kind == "avatar":
         users_repo.update_fields(db, user.id, avatar_url=public)
     elif kind == "car_photo":
-        cars_repo.update_fields(db, entity_id, photo_url=public)
+        # Draft upload (no car yet) — caller will include public_url in
+        # POST /cars. We only return the URL.
+        if entity_id is not None:
+            cars_repo.update_fields(db, entity_id, photo_url=public)
     elif kind == "center_avatar":
         centers_repo.update_fields(db, entity_id, avatar_url=public)
     elif kind == "center_gallery":
