@@ -94,7 +94,10 @@ async def _send_otp_sms(phone: str, code: str) -> None:
 
 def _dev_echo(code: str) -> Optional[str]:
     """Return the OTP in the response body only in dev with OTP_DEV_ECHO=true."""
-    if settings.OTP_DEV_ECHO and settings.APP_ENV != "prod":
+    # Fail-closed: only echo when APP_ENV is explicitly a dev-like value AND
+    # OTP_DEV_ECHO is enabled. Any misconfigured env (empty, "prod", typo,
+    # "staging", etc.) returns None, never the OTP.
+    if settings.APP_ENV in ("dev", "local") and settings.OTP_DEV_ECHO:
         return code
     return None
 
