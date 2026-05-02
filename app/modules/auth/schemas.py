@@ -90,6 +90,18 @@ class MechanicLoginIn(BaseModel):
     password: str = Field(..., min_length=1, max_length=128)
 
 
+class UnifiedLoginIn(BaseModel):
+    """Single login form for both centre owners and mechanics.
+
+    The client sends whatever the user typed (a phone, an email-like
+    username, or a mechanic login). The backend tries each authentication
+    path in turn and returns the first one that succeeds.
+    """
+
+    identifier: str = Field(..., min_length=1, max_length=128)
+    password: str = Field(..., min_length=1, max_length=128)
+
+
 # ---------------------------------------------------------------------------
 # Password reset
 # ---------------------------------------------------------------------------

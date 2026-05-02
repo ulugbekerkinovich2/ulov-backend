@@ -30,8 +30,10 @@ from app.modules.auth.schemas import (
     MechanicLoginIn,
     RegisterIn,
     TokenOut,
+    UnifiedLoginIn,
     UserOut,
 )
+from app.core.phone import normalize_phone
 
 router = APIRouter()
 
@@ -297,6 +299,79 @@ def mechanic_login(
         access_token=access,
         expires_in=ttl,
         user=user_out,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 6b. POST /login-unified — single form for owners + mechanics
+# ---------------------------------------------------------------------------
+@router.post(
+    "/login-unified",
+    response_model=TokenOut,
+    summary="Login that accepts either a centre owner's phone or a mechanic login",
+)
+def login_unified(
+    body: UnifiedLoginIn,
+    response: Response,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> TokenOut:
+    raw = body.identifier.strip()
+    user_agent = _user_agent(request)
+    ip = client_ip(request)
+
+    # 1) Owner-style auth: treat the input as a phone if it looks remotely
+    # like one (digits / +). normalize_phone tolerates spaces and dashes.
+    looks_like_phone = any(c.isdigit() for c in raw) and not raw[0].isalpha()
+    if looks_like_phone:
+        try:
+            phone = normalize_phone(raw)
+        except Exception:  # noqa: BLE001
+            phone = None
+        if phone:
+            try:
+                user = svc.authenticate(db, phone=phone, password=body.password)
+            except UnauthorizedError:
+                user = None
+            if user is not None:
+                access, refresh, ttl = svc.issue_tokens(
+                    db,
+                    sub=user.id,
+                    role=user.role,
+                    center_id=user.center_id,
+                    user_agent=user_agent,
+                    ip=ip,
+                )
+                _set_refresh_cookie(response, refresh)
+                return _token_envelope(user, access, ttl)
+
+    # 2) Mechanic-style auth: centre-scoped login string.
+    try:
+        mechanic = svc.authenticate_mechanic(db, login=raw, password=body.password)
+    except UnauthorizedError:
+        mechanic = None
+    if mechanic is not None:
+        access, refresh, ttl = svc.issue_tokens(
+            db,
+            sub=mechanic.id,
+            role="mechanic",
+            center_id=mechanic.center_id,
+            user_agent=user_agent,
+            ip=ip,
+        )
+        _set_refresh_cookie(response, refresh)
+        user_out = UserOut(
+            id=mechanic.id,
+            phone="mechanic",
+            full_name=mechanic.full_name,
+            role="mechanic",
+            center_id=mechanic.center_id,
+            created_at=mechanic.created_at,
+        )
+        return TokenOut(access_token=access, expires_in=ttl, user=user_out)
+
+    raise UnauthorizedError(
+        "Invalid credentials", code="AUTH_INVALID_CREDENTIALS"
     )
 
 

@@ -74,6 +74,14 @@ class IntakeIn(BaseModel):
     notes: Optional[str] = None
 
 
+class CustomerBookingIn(BaseModel):
+    """Customer-side booking request — opens a ``waiting`` service at a centre."""
+
+    car_id: UUID
+    items: List[ServiceItemIn] = Field(default_factory=list)
+    notes: Optional[str] = Field(None, max_length=1000)
+
+
 class ServicePatchIn(BaseModel):
     mechanic_id: Optional[UUID] = None
     next_recommended_mileage: Optional[int] = Field(None, ge=0, le=10_000_000)

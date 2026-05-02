@@ -22,13 +22,16 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.errors import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import (
+    ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError,
+)
 from app.core.logging import get_logger
 from app.db.base import utcnow
 from app.deps import CurrentUser
 from app.modules.audit import service as audit_svc
 from app.modules.cars import repository as cars_repo
 from app.modules.mechanics import repository as mech_repo
+from app.modules.service_centers import repository as centers_repo
 from app.modules.service_centers import service as centers_svc
 from app.modules.services import repository as repo
 from app.modules.services import state_machine as sm
@@ -273,6 +276,61 @@ def create(
         service_id=str(s.id),
         center_id=str(center_id),
         car_id=str(car_id),
+    )
+    return s
+
+
+def book_by_customer(
+    db: Session,
+    center_id: UUIDLike,
+    user: CurrentUser,
+    *,
+    car_id: UUIDLike,
+    items: Optional[List[Dict[str, Any]]] = None,
+    notes: Optional[str] = None,
+) -> Service:
+    """Customer-initiated booking: opens a service in ``waiting`` so the
+    centre's queue picks it up. The car must belong to the calling user;
+    no centre staff role is required.
+    """
+    car = _validate_car(db, car_id)
+    if str(car.owner_id) != str(user.id) and user.role != "admin":
+        raise UnauthorizedError(
+            "Not your car", code="SERVICE_BOOKING_NOT_OWNER"
+        )
+
+    center = centers_repo.get_by_id(db, center_id)
+    if center is None:
+        raise NotFoundError("Centre not found", code="CENTER_NOT_FOUND")
+
+    s = repo.create(
+        db,
+        car_id=car.id,
+        center_id=center.id,
+        mechanic_id=None,
+        status=sm.WAITING,
+        mileage_at_intake=car.mileage or 0,
+        next_recommended_mileage=None,
+        notes=notes,
+    )
+    if items:
+        repo.replace_items(
+            db, s.id, [it.dict() if hasattr(it, "dict") else it for it in items]
+        )
+    repo.add_transition(
+        db,
+        service_id=s.id,
+        from_status=None,
+        to_status=sm.WAITING,
+        by_user_id=user.id,
+        reason="customer_booking",
+    )
+    log.info(
+        "service_booked_by_customer",
+        service_id=str(s.id),
+        center_id=str(center.id),
+        car_id=str(car.id),
+        user_id=str(user.id),
     )
     return s
 

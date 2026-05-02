@@ -65,6 +65,7 @@ from app.modules.services.schemas import (
     CarLookupOut,
     ConditionPhotoIn,
     ConditionPhotoOut,
+    CustomerBookingIn,
     IntakeIn,
     ServiceCarOut,
     ServiceCreateIn,
@@ -284,6 +285,32 @@ async def intake(
         car_id=car.id,
         mileage_at_intake=body.mileage_at_intake,
         mechanic_id=body.mechanic_id,
+        notes=body.notes,
+    )
+    items = svc.list_items(db, s.id, user)
+    await _publish_event(redis, s, type_="service.created")
+    return _to_service_out(s, items)
+
+
+@router.post(
+    "/service-centers/{center_id}/bookings",
+    response_model=ServiceOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Customer-side booking — request a service at a centre",
+)
+async def book_service(
+    center_id: UUID,
+    body: CustomerBookingIn,
+    user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    redis: Redis = Depends(get_redis_pubsub),
+) -> ServiceOut:
+    s = svc.book_by_customer(
+        db,
+        center_id,
+        user,
+        car_id=body.car_id,
+        items=[i.dict() for i in body.items],
         notes=body.notes,
     )
     items = svc.list_items(db, s.id, user)
