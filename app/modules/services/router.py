@@ -161,12 +161,15 @@ def _notify_customer_on_transition(db: Session, service, to_status: str) -> None
 @router.get(
     "/vehicles/lookup",
     response_model=List[CarLookupOut],
-    summary="Search vehicles by VIN, plate or owner phone (staff)",
+    summary="Search vehicles by VIN, plate, owner phone, or tech-passport (staff)",
 )
 def vehicle_lookup(
-    vin: Optional[str] = Query(None, min_length=17, max_length=17),
+    # min_length relaxed to 11 for VIN — some legacy rows store the
+    # 12-17-char VIN that the AddCar UI accepted historically.
+    vin: Optional[str] = Query(None, min_length=11, max_length=17),
     plate: Optional[str] = Query(None, min_length=1, max_length=20),
     phone: Optional[str] = Query(None, min_length=4, max_length=20),
+    tech_passport: Optional[str] = Query(None, min_length=1, max_length=20),
     user: CurrentUser = Depends(get_current_staff),
     db: Session = Depends(get_db),
 ) -> List[CarLookupOut]:
@@ -174,7 +177,9 @@ def vehicle_lookup(
     a phone search hits an owner with several cars. The intake flow uses
     POST /service-centers/{id}/intakes which still expects exactly one car.
     """
-    cars = svc.search_vehicles(db, user, vin=vin, plate=plate, phone=phone)
+    cars = svc.search_vehicles(
+        db, user, vin=vin, plate=plate, phone=phone, tech_passport=tech_passport,
+    )
     if not cars:
         return []
 

@@ -210,18 +210,24 @@ def search_vehicles(
     vin: Optional[str] = None,
     plate: Optional[str] = None,
     phone: Optional[str] = None,
+    tech_passport: Optional[str] = None,
 ) -> List[Car]:
     """Staff-side vehicle search.
 
-    Accepts any one of VIN, plate or phone and returns *all* matching cars.
-    Phone-based search returns every car registered to that owner — one phone
-    can have many vehicles in the garage. Plate / VIN return at most one row
-    each (uniqueness is enforced in :mod:`cars.service`) but we still return a
-    list so the response shape is consistent for the frontend.
+    Accepts any one of VIN, plate, owner phone, or tech-passport number and
+    returns *all* matching cars. Phone-based search returns every car
+    registered to that owner — one phone can have many vehicles. The other
+    three identifiers are unique per car so they return at most one row, but
+    we still return a list for a consistent response shape.
+
+    Plate input is normalised (uppercased + non-alnum stripped) before the
+    DB lookup so callers can pass ``"01 U 255 ER"`` or ``"01U255ER"`` and get
+    the same result. Tech-passport gets the same treatment.
     """
-    if not (vin or plate or phone):
+    if not (vin or plate or phone or tech_passport):
         raise ValidationError(
-            "vin, plate or phone required", code="LOOKUP_REQUIRES_QUERY"
+            "vin, plate, phone or tech_passport required",
+            code="LOOKUP_REQUIRES_QUERY",
         )
     if user.role not in {"mechanic", "owner", "admin"}:
         raise ForbiddenError("Staff only", code="LOOKUP_STAFF_ONLY")
@@ -240,14 +246,39 @@ def search_vehicles(
         return cars_repo.list_by_owner(db, owner.id)
 
     cars: List[Car] = []
+
     if vin:
-        c = cars_repo.get_by_vin(db, vin)
-        if c is not None:
-            cars.append(c)
+        # VIN normalisation: strip whitespace and uppercase. We don't enforce
+        # a 17-char length here because some legacy rows may store partial
+        # VINs.
+        normalized_vin = vin.strip().upper().replace(" ", "")
+        if normalized_vin:
+            c = cars_repo.get_by_vin(db, normalized_vin)
+            if c is not None:
+                cars.append(c)
+
     if not cars and plate:
-        c = cars_repo.get_by_plate(db, plate)
-        if c is not None:
-            cars.append(c)
+        # Mirror cars/schemas plate normalisation so the staff search isn't
+        # picky about spaces / dashes.
+        from app.core.plate import _strip as _strip_plate
+
+        normalized_plate = _strip_plate(plate)
+        if normalized_plate:
+            c = cars_repo.get_by_plate(db, normalized_plate)
+            if c is not None:
+                cars.append(c)
+
+    if not cars and tech_passport:
+        # Tech passport — same alnum-only normalisation as the cars schema's
+        # _norm_tech_passport helper.
+        normalized_tp = "".join(
+            ch for ch in tech_passport.upper() if ch.isalnum()
+        )
+        if normalized_tp:
+            c = cars_repo.get_by_tech_passport(db, normalized_tp)
+            if c is not None:
+                cars.append(c)
+
     return cars
 
 

@@ -32,6 +32,12 @@ def get_by_vin(db: Session, vin: str) -> Optional[Car]:
     return db.execute(select(Car).where(Car.vin == vin)).scalar_one_or_none()
 
 
+def get_by_tech_passport(db: Session, tech_passport: str) -> Optional[Car]:
+    return db.execute(
+        select(Car).where(Car.tech_passport == tech_passport)
+    ).scalar_one_or_none()
+
+
 def create(db: Session, **fields: Any) -> Car:
     car = Car(**fields)
     db.add(car)
