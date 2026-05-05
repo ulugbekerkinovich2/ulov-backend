@@ -36,7 +36,7 @@ from redis.asyncio import Redis
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.core.errors import UnauthorizedError
+from app.core.errors import NotFoundError, UnauthorizedError
 from app.core.events import (
     CH_SERVICE_ONE,
     CH_SERVICES,
@@ -209,6 +209,40 @@ def vehicle_lookup(
             )
         )
     return out
+
+
+@router.get(
+    "/vehicles/{car_id}",
+    response_model=CarLookupOut,
+    summary="Get a vehicle by id with owner info (staff)",
+)
+def get_vehicle_detail(
+    car_id: UUID,
+    user: CurrentUser = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+) -> CarLookupOut:
+    """Companion to /vehicles/lookup — used by the centre admin's vehicle
+    detail page to load a car that may not yet have a service in this
+    centre (so it isn't in the locally-cached queue).
+    """
+    from app.modules.auth import repository as auth_repo
+
+    car = cars_repo.get_by_id(db, car_id)
+    if car is None:
+        raise NotFoundError("Vehicle not found", code="VEHICLE_NOT_FOUND")
+    owner = auth_repo.get_user_by_id(db, car.owner_id)
+    return CarLookupOut(
+        car_id=car.id,
+        owner_id=car.owner_id,
+        owner_name=owner.full_name if owner else None,
+        owner_phone=owner.phone if owner else None,
+        brand=car.brand,
+        model=car.model,
+        year=car.year,
+        plate=car.plate,
+        vin=car.vin,
+        mileage=car.mileage,
+    )
 
 
 @router.get(
