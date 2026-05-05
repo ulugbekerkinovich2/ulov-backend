@@ -75,6 +75,7 @@ from app.modules.services.schemas import (
     ServicePatchIn,
     TransitionIn,
     TransitionOut,
+    VehiclePatchIn,
 )
 
 log = get_logger(__name__)
@@ -230,6 +231,60 @@ def get_vehicle_detail(
     car = cars_repo.get_by_id(db, car_id)
     if car is None:
         raise NotFoundError("Vehicle not found", code="VEHICLE_NOT_FOUND")
+    owner = auth_repo.get_user_by_id(db, car.owner_id)
+    return CarLookupOut(
+        car_id=car.id,
+        owner_id=car.owner_id,
+        owner_name=owner.full_name if owner else None,
+        owner_phone=owner.phone if owner else None,
+        brand=car.brand,
+        model=car.model,
+        year=car.year,
+        plate=car.plate,
+        vin=car.vin,
+        mileage=car.mileage,
+    )
+
+
+@router.patch(
+    "/vehicles/{car_id}",
+    response_model=CarLookupOut,
+    summary="Update a vehicle's fields (staff)",
+)
+def patch_vehicle(
+    car_id: UUID,
+    body: VehiclePatchIn,
+    user: CurrentUser = Depends(get_current_staff),
+    db: Session = Depends(get_db),
+) -> CarLookupOut:
+    """Staff-side car edit. Distinct from PATCH /cars/{id} (customer) —
+    that endpoint enforces ownership; this one trusts the staff role and
+    can additionally update the owner's display name (handy for fixing
+    typos when registering a walk-in customer). Phone changes are
+    intentionally not supported here: phone is the user's lookup key and
+    the customer reauth flow has to handle that.
+    """
+    from app.core.plate import detect_plate_type
+    from app.modules.auth import repository as auth_repo
+    from app.modules.users import repository as users_repo
+
+    car = cars_repo.get_by_id(db, car_id)
+    if car is None:
+        raise NotFoundError("Vehicle not found", code="VEHICLE_NOT_FOUND")
+
+    car_data = body.car_payload()
+    if car_data:
+        if "plate" in car_data and "plate_type" not in car_data:
+            try:
+                car_data["plate_type"] = detect_plate_type(car_data["plate"]).value
+            except Exception:  # noqa: BLE001
+                pass
+        cars_repo.update_fields(db, car.id, **car_data)
+
+    if body.owner_name is not None:
+        users_repo.update_fields(db, car.owner_id, full_name=body.owner_name)
+
+    car = cars_repo.get_by_id(db, car_id)
     owner = auth_repo.get_user_by_id(db, car.owner_id)
     return CarLookupOut(
         car_id=car.id,

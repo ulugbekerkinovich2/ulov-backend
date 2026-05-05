@@ -178,6 +178,47 @@ class CarLookupOut(BaseModel):
         orm_mode = True
 
 
+class VehiclePatchIn(BaseModel):
+    """Staff-side payload for editing any car. Mirrors CarPatchIn for the
+    car columns and adds an optional ``owner_name`` so the centre admin
+    can fix typos in the customer's display name. Phone is deliberately
+    not editable here (it's the unique lookup key — changing it goes
+    through the customer's own auth flow).
+    """
+
+    brand: Optional[str] = Field(None, min_length=1, max_length=64)
+    model: Optional[str] = Field(None, min_length=1, max_length=64)
+    year: Optional[int] = Field(None, ge=1950, le=2100)
+    color: Optional[str] = Field(None, max_length=32)
+    plate: Optional[str] = Field(None, min_length=1, max_length=20)
+    mileage: Optional[int] = Field(None, ge=0, le=10_000_000)
+    vin: Optional[str] = Field(None, max_length=17)
+    tech_passport: Optional[str] = Field(None, max_length=20)
+
+    owner_name: Optional[str] = Field(None, max_length=255)
+
+    def car_payload(self) -> Dict[str, Any]:
+        """Strip the owner-only fields and any unset/None entries so the
+        caller can splat the result straight into ``cars_repo.update_fields``.
+        """
+        data: Dict[str, Any] = {}
+        for k in ("brand", "model", "year", "color", "plate", "mileage", "vin", "tech_passport"):
+            v = getattr(self, k)
+            if v is not None:
+                data[k] = v
+        # Light normalisation — strip whitespace + uppercase the alnum-only
+        # fields. Keeps the plate/vin uniqueness checks predictable.
+        if "plate" in data:
+            data["plate"] = "".join(ch for ch in str(data["plate"]).upper() if ch.isalnum())
+        if "vin" in data:
+            data["vin"] = "".join(ch for ch in str(data["vin"]).upper() if ch.isalnum())
+        if "tech_passport" in data:
+            data["tech_passport"] = "".join(
+                ch for ch in str(data["tech_passport"]).upper() if ch.isalnum()
+            )
+        return data
+
+
 # Re-export raw value tuples so callers don't reimport models.
 ALL_STATES = tuple(SERVICE_STATUS_VALUES)
 ALL_PHOTO_STAGES = tuple(CONDITION_IMAGE_STAGE_VALUES)
