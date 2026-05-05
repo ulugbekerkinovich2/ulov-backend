@@ -16,6 +16,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.deps import CurrentUser
+from app.modules.mechanics.models import Mechanic
 from app.modules.service_centers import service as centers_svc
 from app.modules.services.models import Service, ServiceItem
 
@@ -184,6 +185,7 @@ def mechanic_load(
     rows = db.execute(
         select(
             Service.mechanic_id,
+            Mechanic.full_name,
             func.count(Service.id).label("services"),
             func.coalesce(
                 func.sum(ServiceItem.service_price + ServiceItem.parts_price), 0
@@ -191,14 +193,17 @@ def mechanic_load(
         )
         .select_from(Service)
         .join(ServiceItem, ServiceItem.service_id == Service.id, isouter=True)
+        # LEFT JOIN so unassigned services (mechanic_id IS NULL) still bucket.
+        .join(Mechanic, Mechanic.id == Service.mechanic_id, isouter=True)
         .where(Service.center_id == center_id)
         .where(Service.deleted_at.is_(None))
-        .group_by(Service.mechanic_id)
+        .group_by(Service.mechanic_id, Mechanic.full_name)
     ).all()
 
     return [
         {
             "mechanic_id": str(row.mechanic_id) if row.mechanic_id else None,
+            "full_name": row.full_name,
             "services": int(row.services or 0),
             "revenue": int(row.revenue or 0),
         }
