@@ -38,6 +38,25 @@ def get_by_tech_passport(db: Session, tech_passport: str) -> Optional[Car]:
     ).scalar_one_or_none()
 
 
+def search_by_vin_suffix(db: Session, suffix: str, *, limit: int = 25) -> List[Car]:
+    """Find cars whose VIN ends with ``suffix`` (case-insensitive).
+
+    Used by the staff search box — drivers usually remember the last
+    4-6 characters of the VIN, not all 17. Caller is expected to pre-normalise
+    ``suffix`` (uppercase, alnum only) so the LIKE pattern stays predictable.
+    """
+    if not suffix:
+        return []
+    stmt = (
+        select(Car)
+        .where(Car.vin.is_not(None))
+        .where(Car.vin.ilike(f"%{suffix}"))
+        .order_by(Car.created_at.desc())
+        .limit(limit)
+    )
+    return list(db.execute(stmt).scalars())
+
+
 def create(db: Session, **fields: Any) -> Car:
     car = Car(**fields)
     db.add(car)

@@ -248,14 +248,20 @@ def search_vehicles(
     cars: List[Car] = []
 
     if vin:
-        # VIN normalisation: strip whitespace and uppercase. We don't enforce
-        # a 17-char length here because some legacy rows may store partial
-        # VINs.
-        normalized_vin = vin.strip().upper().replace(" ", "")
+        # VIN normalisation: strip whitespace + non-alnum, uppercase.
+        normalized_vin = "".join(
+            ch for ch in vin.upper() if ch.isalnum()
+        )
         if normalized_vin:
-            c = cars_repo.get_by_vin(db, normalized_vin)
-            if c is not None:
-                cars.append(c)
+            if len(normalized_vin) >= 11:
+                # Long enough to be a (legacy or full) VIN — exact match.
+                c = cars_repo.get_by_vin(db, normalized_vin)
+                if c is not None:
+                    cars.append(c)
+            else:
+                # Short query → treat as a suffix lookup. Drivers usually
+                # remember the last 4-6 chars of the VIN.
+                cars.extend(cars_repo.search_by_vin_suffix(db, normalized_vin))
 
     if not cars and plate:
         # Mirror cars/schemas plate normalisation so the staff search isn't

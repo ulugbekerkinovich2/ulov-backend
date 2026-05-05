@@ -164,9 +164,10 @@ def _notify_customer_on_transition(db: Session, service, to_status: str) -> None
     summary="Search vehicles by VIN, plate, owner phone, or tech-passport (staff)",
 )
 def vehicle_lookup(
-    # min_length relaxed to 11 for VIN — some legacy rows store the
-    # 12-17-char VIN that the AddCar UI accepted historically.
-    vin: Optional[str] = Query(None, min_length=11, max_length=17),
+    # VIN accepts both full (11-17 chars, exact match) and short queries
+    # (4-10 chars) — service layer treats anything under 11 as a suffix
+    # lookup so drivers can search by the last 4-6 characters of the VIN.
+    vin: Optional[str] = Query(None, min_length=4, max_length=17),
     plate: Optional[str] = Query(None, min_length=1, max_length=20),
     phone: Optional[str] = Query(None, min_length=4, max_length=20),
     tech_passport: Optional[str] = Query(None, min_length=1, max_length=20),
