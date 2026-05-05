@@ -165,6 +165,8 @@ class ServiceOut(BaseModel):
 class CarLookupOut(BaseModel):
     car_id: UUID
     owner_id: UUID
+    owner_name: Optional[str] = None
+    owner_phone: Optional[str] = None
     brand: str
     model: str
     year: int

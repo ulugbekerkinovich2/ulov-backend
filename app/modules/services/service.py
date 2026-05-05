@@ -30,6 +30,7 @@ from app.db.base import utcnow
 from app.deps import CurrentUser
 from app.modules.audit import service as audit_svc
 from app.modules.cars import repository as cars_repo
+from app.modules.cars.models import Car
 from app.modules.mechanics import repository as mech_repo
 from app.modules.service_centers import repository as centers_repo
 from app.modules.service_centers import service as centers_svc
@@ -182,6 +183,10 @@ def lookup_vehicle(
     vin: Optional[str] = None,
     plate: Optional[str] = None,
 ):
+    """Single-car lookup by VIN or plate. Kept for the intake flow which
+    needs exactly one car or a 404. For the staff search UI use
+    :func:`search_vehicles` instead.
+    """
     if not vin and not plate:
         raise ValidationError(
             "vin or plate required", code="LOOKUP_REQUIRES_VIN_OR_PLATE"
@@ -196,6 +201,54 @@ def lookup_vehicle(
     if car is None:
         raise NotFoundError("Vehicle not found", code="VEHICLE_NOT_FOUND")
     return car
+
+
+def search_vehicles(
+    db: Session,
+    user: CurrentUser,
+    *,
+    vin: Optional[str] = None,
+    plate: Optional[str] = None,
+    phone: Optional[str] = None,
+) -> List[Car]:
+    """Staff-side vehicle search.
+
+    Accepts any one of VIN, plate or phone and returns *all* matching cars.
+    Phone-based search returns every car registered to that owner — one phone
+    can have many vehicles in the garage. Plate / VIN return at most one row
+    each (uniqueness is enforced in :mod:`cars.service`) but we still return a
+    list so the response shape is consistent for the frontend.
+    """
+    if not (vin or plate or phone):
+        raise ValidationError(
+            "vin, plate or phone required", code="LOOKUP_REQUIRES_QUERY"
+        )
+    if user.role not in {"mechanic", "owner", "admin"}:
+        raise ForbiddenError("Staff only", code="LOOKUP_STAFF_ONLY")
+
+    if phone:
+        from app.core.phone import normalize_phone, PhoneError
+        from app.modules.auth import repository as auth_repo
+
+        try:
+            normalized = normalize_phone(phone)
+        except PhoneError:
+            return []
+        owner = auth_repo.get_user_by_phone(db, normalized)
+        if owner is None:
+            return []
+        return cars_repo.list_by_owner(db, owner.id)
+
+    cars: List[Car] = []
+    if vin:
+        c = cars_repo.get_by_vin(db, vin)
+        if c is not None:
+            cars.append(c)
+    if not cars and plate:
+        c = cars_repo.get_by_plate(db, plate)
+        if c is not None:
+            cars.append(c)
+    return cars
 
 
 # ---------------------------------------------------------------------------

@@ -160,26 +160,49 @@ def _notify_customer_on_transition(db: Session, service, to_status: str) -> None
 # ---------------------------------------------------------------------------
 @router.get(
     "/vehicles/lookup",
-    response_model=CarLookupOut,
-    summary="Look up a vehicle by VIN or plate (staff)",
+    response_model=List[CarLookupOut],
+    summary="Search vehicles by VIN, plate or owner phone (staff)",
 )
 def vehicle_lookup(
     vin: Optional[str] = Query(None, min_length=17, max_length=17),
     plate: Optional[str] = Query(None, min_length=1, max_length=20),
+    phone: Optional[str] = Query(None, min_length=4, max_length=20),
     user: CurrentUser = Depends(get_current_staff),
     db: Session = Depends(get_db),
-) -> CarLookupOut:
-    car = svc.lookup_vehicle(db, user, vin=vin, plate=plate)
-    return CarLookupOut(
-        car_id=car.id,
-        owner_id=car.owner_id,
-        brand=car.brand,
-        model=car.model,
-        year=car.year,
-        plate=car.plate,
-        vin=car.vin,
-        mileage=car.mileage,
-    )
+) -> List[CarLookupOut]:
+    """Always returns a list — empty when nothing matched, multiple rows when
+    a phone search hits an owner with several cars. The intake flow uses
+    POST /service-centers/{id}/intakes which still expects exactly one car.
+    """
+    cars = svc.search_vehicles(db, user, vin=vin, plate=plate, phone=phone)
+    if not cars:
+        return []
+
+    # Resolve owner display info in one round trip rather than N queries.
+    from app.modules.auth import repository as auth_repo
+
+    owner_cache: dict = {}
+    out: List[CarLookupOut] = []
+    for car in cars:
+        owner = owner_cache.get(car.owner_id)
+        if owner is None:
+            owner = auth_repo.get_user_by_id(db, car.owner_id)
+            owner_cache[car.owner_id] = owner
+        out.append(
+            CarLookupOut(
+                car_id=car.id,
+                owner_id=car.owner_id,
+                owner_name=owner.full_name if owner else None,
+                owner_phone=owner.phone if owner else None,
+                brand=car.brand,
+                model=car.model,
+                year=car.year,
+                plate=car.plate,
+                vin=car.vin,
+                mileage=car.mileage,
+            )
+        )
+    return out
 
 
 @router.get(
