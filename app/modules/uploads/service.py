@@ -57,6 +57,10 @@ def _key_for(
         "center_avatar": ("centers", str(entity_id or uuid.uuid4())),
         "center_gallery": ("centers", str(entity_id or uuid.uuid4()) + "/gallery"),
         "service_photo": ("services", str(entity_id or uuid.uuid4())),
+        # Stories / posts published by a centre. Just stash under
+        # centers/{id}/stories — the caller chains POST /content/stories
+        # with the returned public_url, no DB write happens here.
+        "story_image": ("centers", str(entity_id or uuid.uuid4()) + "/stories"),
     }[kind]
     return f"{parts[0]}/{parts[1]}/{uuid.uuid4().hex}.{ext}"
 
@@ -102,6 +106,21 @@ def _assert_can_upload(
         # (service-photo creation endpoint). Here we only require staff.
         if user.role not in {"mechanic", "owner", "admin"}:
             raise ForbiddenError("Staff only", code="UPLOAD_STAFF_ONLY")
+        return
+    if kind == "story_image":
+        # Stories are owned by a centre — only the centre's owner (or an
+        # admin) may publish them.
+        if entity_id is None:
+            raise ValidationError(
+                "entity_id required for story photos", code="UPLOAD_ENTITY_REQUIRED"
+            )
+        center = centers_repo.get_by_id(db, entity_id)
+        if center is None:
+            raise NotFoundError("Centre not found", code="CENTER_NOT_FOUND")
+        if user.role == "admin":
+            return
+        if str(center.owner_user_id) != str(user.id):
+            raise ForbiddenError("Not your centre", code="CENTER_NOT_OWNER")
         return
     raise ValidationError("unsupported kind", code="UPLOAD_KIND_INVALID")
 
