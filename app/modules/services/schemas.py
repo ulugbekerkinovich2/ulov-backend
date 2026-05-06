@@ -32,6 +32,7 @@ class ServiceCarOut(BaseModel):
     color: Optional[str] = None
     vin: Optional[str] = None
     mileage: int
+    photo_url: Optional[str] = None
     owner: Optional[ServiceOwnerOut] = None
 
     class Config:
@@ -173,6 +174,7 @@ class CarLookupOut(BaseModel):
     plate: str
     vin: Optional[str]
     mileage: int
+    photo_url: Optional[str] = None
 
     class Config:
         orm_mode = True

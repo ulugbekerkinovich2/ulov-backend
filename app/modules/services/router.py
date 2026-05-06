@@ -103,6 +103,7 @@ def _to_service_out(service, items=None) -> ServiceOut:
             color=service.car.color,
             vin=service.car.vin,
             mileage=service.car.mileage,
+            photo_url=service.car.photo_url,
             owner=owner_out
         )
     
@@ -207,6 +208,7 @@ def vehicle_lookup(
                 plate=car.plate,
                 vin=car.vin,
                 mileage=car.mileage,
+                photo_url=car.photo_url,
             )
         )
     return out
@@ -243,6 +245,7 @@ def get_vehicle_detail(
         plate=car.plate,
         vin=car.vin,
         mileage=car.mileage,
+        photo_url=car.photo_url,
     )
 
 
@@ -297,6 +300,7 @@ def patch_vehicle(
         plate=car.plate,
         vin=car.vin,
         mileage=car.mileage,
+        photo_url=car.photo_url,
     )
 
 
