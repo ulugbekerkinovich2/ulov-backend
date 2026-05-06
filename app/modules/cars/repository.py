@@ -69,7 +69,18 @@ def update_fields(db: Session, car_id: UUIDLike, **fields: Any) -> Optional[Car]
     if clean:
         db.execute(update(Car).where(Car.id == car_id).values(**clean))
         db.flush()
-    return get_by_id(db, car_id)
+    # Core update() bypasses the ORM unit-of-work, so a plain follow-up
+    # SELECT returns the *cached* ORM row from the session identity map
+    # with the pre-update values. populate_existing=True forces the row's
+    # attributes to be refreshed from the freshly-fetched data — without
+    # this, callers like CarOut.from_orm read stale fields and the API
+    # response looks like the patch silently dropped them.
+    stmt = (
+        select(Car)
+        .where(Car.id == car_id)
+        .execution_options(populate_existing=True)
+    )
+    return db.execute(stmt).scalar_one_or_none()
 
 
 def remove(db: Session, car_id: UUIDLike) -> int:

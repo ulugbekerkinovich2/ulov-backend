@@ -80,7 +80,14 @@ def update_fields(db: Session, center_id: UUIDLike, **fields: Any) -> Optional[S
     if clean:
         db.execute(update(ServiceCenter).where(ServiceCenter.id == center_id).values(**clean))
         db.flush()
-    return get_by_id(db, center_id)
+    # populate_existing — see cars.repository.update_fields. Without it
+    # the ORM hands back the pre-update cached row.
+    stmt = (
+        select(ServiceCenter)
+        .where(ServiceCenter.id == center_id)
+        .execution_options(populate_existing=True)
+    )
+    return db.execute(stmt).scalar_one_or_none()
 
 
 def remove(db: Session, center_id: UUIDLike) -> int:

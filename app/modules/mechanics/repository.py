@@ -54,7 +54,15 @@ def update_fields(db: Session, mechanic_id: UUIDLike, **fields: Any) -> Optional
     if clean:
         db.execute(update(Mechanic).where(Mechanic.id == mechanic_id).values(**clean))
         db.flush()
-    return get_by_id(db, mechanic_id, include_deleted=True)
+    # populate_existing forces the ORM to refresh the cached identity-map
+    # row; without it, a Core update bypasses the unit-of-work and the
+    # follow-up SELECT returns the stale pre-update attributes.
+    stmt = (
+        select(Mechanic)
+        .where(Mechanic.id == mechanic_id)
+        .execution_options(populate_existing=True)
+    )
+    return db.execute(stmt).scalar_one_or_none()
 
 
 def soft_delete(db: Session, mechanic_id: UUIDLike) -> int:

@@ -47,7 +47,15 @@ def update_fields(
         .values(**fields)
     )
     db.flush()
-    return get_by_id(db, service_id, include_deleted=True)
+    # populate_existing — see cars.repository.update_fields. Core updates
+    # don't refresh ORM-cached attributes, so without this every PATCH on
+    # a service that was already loaded in the session returns stale data.
+    stmt = (
+        select(Service)
+        .where(Service.id == service_id)
+        .execution_options(populate_existing=True)
+    )
+    return db.execute(stmt).scalar_one_or_none()
 
 
 def list_for_center(

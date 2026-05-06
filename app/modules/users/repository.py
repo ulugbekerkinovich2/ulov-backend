@@ -31,4 +31,12 @@ def update_fields(db: Session, user_id: UUIDLike, **fields: Any) -> Optional[Use
         return get_by_id(db, user_id)
     db.execute(update(User).where(User.id == user_id).values(**values))
     db.flush()
-    return get_by_id(db, user_id)
+    # See cars.repository.update_fields — populate_existing forces the ORM
+    # to refresh the identity-mapped row instead of handing back the
+    # pre-update cached attributes.
+    stmt = (
+        select(User)
+        .where(User.id == user_id)
+        .execution_options(populate_existing=True)
+    )
+    return db.execute(stmt).scalar_one_or_none()
