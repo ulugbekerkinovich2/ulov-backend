@@ -73,6 +73,7 @@ from app.modules.services.schemas import (
     ServiceOut,
     ServiceOwnerOut,
     ServicePatchIn,
+    TimelineEventOut,
     TransitionIn,
     TransitionOut,
     VehiclePatchIn,
@@ -616,17 +617,83 @@ def list_condition_photos(
     ]
 
 
+def _transition_kind(from_status: Optional[str], to_status: str) -> str:
+    """Map a (from, to) pair onto the semantic kind the frontend renders."""
+    if from_status is None and to_status == "waiting":
+        return "received"
+    if to_status == "in_progress" and from_status == "paused":
+        return "resumed"
+    if to_status == "in_progress":
+        return "started"
+    if to_status == "paused":
+        return "paused"
+    if to_status == "completed":
+        return "completed"
+    if to_status == "cancelled":
+        return "cancelled"
+    return "note"
+
+
 @router.get(
     "/services/{service_id}/timeline",
-    response_model=List[TransitionOut],
-    summary="Audit log of state transitions",
+    response_model=List[TimelineEventOut],
+    summary="Service progress timeline (synthesised from state transitions)",
 )
 def timeline(
     service_id: UUID,
     user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> List[TransitionOut]:
-    return [TransitionOut.from_orm(t) for t in svc.list_timeline(db, service_id, user)]
+) -> List[TimelineEventOut]:
+    """Returns the audit-style state transitions in a UI-friendly shape.
+
+    Each row exposes the ``kind`` (``received | started | resumed | paused
+    | completed | cancelled``), the operator-supplied ``reason`` (used as
+    the note line), and the ``actor_name`` so the customer's progress sheet
+    can show "Usta Bobur Yusupov" without a second round-trip.
+
+    Localisation of the label / default note happens on the front-end —
+    the i18n layer needs the user's language anyway.
+    """
+    from app.modules.auth import repository as auth_repo
+    from app.modules.mechanics import repository as mech_repo
+
+    rows = svc.list_timeline(db, service_id, user)
+    out: List[TimelineEventOut] = []
+    user_cache: dict = {}
+    for t in rows:
+        actor_name: Optional[str] = None
+        if t.by_user_id is not None:
+            actor = user_cache.get(t.by_user_id)
+            if actor is None:
+                actor = auth_repo.get_user_by_id(db, t.by_user_id)
+                user_cache[t.by_user_id] = actor
+            if actor and actor.full_name:
+                actor_name = actor.full_name
+        # Mechanic transitions leave by_user_id NULL (FK won't accept the
+        # mechanic id). The service has the mechanic attached after auto-
+        # claim; surface their name for the started / resumed rows.
+        if actor_name is None and t.to_status == "in_progress":
+            mech = None
+            try:
+                from app.modules.services import repository as svc_repo
+
+                s = svc_repo.get_by_id(db, service_id)
+                if s and s.mechanic_id:
+                    mech = mech_repo.get_by_id(db, s.mechanic_id)
+            except Exception:  # noqa: BLE001
+                mech = None
+            if mech and mech.full_name:
+                actor_name = mech.full_name
+
+        out.append(
+            TimelineEventOut(
+                at=t.at,
+                kind=_transition_kind(t.from_status, t.to_status),
+                reason=t.reason,
+                actor_name=actor_name,
+            )
+        )
+    return out
 
 
 # ---------------------------------------------------------------------------

@@ -137,6 +137,23 @@ class TransitionOut(BaseModel):
         orm_mode = True
 
 
+class TimelineEventOut(BaseModel):
+    """UI-friendly transition row.
+
+    The status pair (``from_status`` → ``to_status``) is collapsed into a
+    semantic ``kind`` the frontend already knows how to render —
+    ``received | started | resumed | paused | completed | cancelled | note``.
+    The label / note text is *not* localised here; the front i18n picks
+    it up from the kind + reason. ``actor_name`` carries the mechanic /
+    operator full name for cases like "Usta Bobur Yusupov".
+    """
+
+    at: datetime
+    kind: str
+    reason: Optional[str] = None
+    actor_name: Optional[str] = None
+
+
 class ServiceOut(BaseModel):
     id: UUID
     car_id: UUID
