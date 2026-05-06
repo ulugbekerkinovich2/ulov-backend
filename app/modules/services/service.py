@@ -61,6 +61,20 @@ def _can_view(service: Service, user: CurrentUser, *, car_owner_id: UUIDLike) ->
     return False
 
 
+def _user_id_for_audit(user: CurrentUser) -> Optional[UUID]:
+    """Return ``user.id`` only when it actually refers to a row in ``users``.
+
+    Mechanic JWTs put the mechanic's id in ``sub`` — those ids live in the
+    ``mechanics`` table, not ``users``. Writing them into a ``users.id`` FK
+    column (e.g. ``service_transitions.by_user_id``) would violate the
+    foreign-key constraint and 500 the request, so for mechanics we record
+    NULL and rely on the parallel audit-log row to keep a paper trail.
+    """
+    if user is None or user.role == "mechanic":
+        return None
+    return user.id
+
+
 def _assert_can_mutate(
     db: Session, service: Service, user: CurrentUser
 ) -> None:
@@ -352,7 +366,7 @@ def create(
         service_id=s.id,
         from_status=None,
         to_status=sm.WAITING,
-        by_user_id=user.id,
+        by_user_id=_user_id_for_audit(user),
         reason=None,
     )
     # Snap the intake mileage onto the car + history.
@@ -412,7 +426,7 @@ def book_by_customer(
         service_id=s.id,
         from_status=None,
         to_status=sm.WAITING,
-        by_user_id=user.id,
+        by_user_id=_user_id_for_audit(user),
         reason="customer_booking",
     )
     log.info(
@@ -509,7 +523,7 @@ def transition(
         service_id=s.id,
         from_status=from_status,
         to_status=to_status,
-        by_user_id=user.id,
+        by_user_id=_user_id_for_audit(user),
         reason=reason,
     )
     log.info(
