@@ -138,9 +138,17 @@ def presign_put(
     filename: Optional[str],
     entity_id: Optional[UUIDLike],
 ) -> Tuple[str, Dict[str, str], str, int]:
-    if content_type.lower() not in ALLOWED_CONTENT_TYPES:
+    ct = content_type.lower()
+    if ct not in ALLOWED_CONTENT_TYPES:
         raise ValidationError(
             "content_type not allowed", code="UPLOAD_CONTENT_TYPE_INVALID"
+        )
+    # Videos are only meaningful for story posts. Everything else (avatars,
+    # car / centre / service photos) must stay image-only.
+    if ct.startswith("video/") and kind != "story_image":
+        raise ValidationError(
+            "video uploads are only allowed for stories",
+            code="UPLOAD_CONTENT_TYPE_INVALID",
         )
     if size_bytes > settings.S3_MAX_UPLOAD_BYTES:
         raise ValidationError(

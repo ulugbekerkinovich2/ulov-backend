@@ -60,8 +60,14 @@ class Settings(BaseSettings):
     # ---- Auth / JWT -------------------------------------------------------
     JWT_SECRET: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TTL_SECONDS: int = 900
-    JWT_REFRESH_TTL_SECONDS: int = 2592000
+    # Access token: 24h. Long enough that customers on a phone aren't
+    # constantly blocked behind a refresh round-trip on a flaky LTE link;
+    # short enough that a stolen token isn't useful for very long.
+    JWT_ACCESS_TTL_SECONDS: int = 86400
+    # Refresh token: 90 days. Mobile users open the app intermittently and
+    # we don't want to force a re-login every month — the refresh cookie
+    # rotates on every use anyway, so a long absolute TTL is fine.
+    JWT_REFRESH_TTL_SECONDS: int = 7776000
     REFRESH_COOKIE_NAME: str = "ulov_refresh"
     REFRESH_COOKIE_SECURE: bool = False
     REFRESH_COOKIE_SAMESITE: str = "strict"

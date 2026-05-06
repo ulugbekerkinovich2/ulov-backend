@@ -7,16 +7,28 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
-# Allow-listed image content types — anything else gets a 400.
+# Allow-listed media content types — anything else gets a 400.
+# Stories accept short-form videos as well as photos; everything else is
+# image-only and the service-layer guard tightens that further.
 ALLOWED_CONTENT_TYPES = {
     "image/jpeg",
     "image/png",
     "image/webp",
     "image/heic",
     "image/heif",
+    "video/mp4",
+    "video/quicktime",
+    "video/webm",
 }
 
-UPLOAD_KINDS = {"avatar", "car_photo", "center_avatar", "center_gallery", "service_photo"}
+UPLOAD_KINDS = {
+    "avatar",
+    "car_photo",
+    "center_avatar",
+    "center_gallery",
+    "service_photo",
+    "story_image",
+}
 
 
 class PresignIn(BaseModel):
