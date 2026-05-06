@@ -93,7 +93,9 @@ def validate_plate_type(raw: str, expected: PlateType) -> str:
 # ---------------------------------------------------------------------------
 # VIN and tech-passport (kept here so all vehicle identifiers live together)
 # ---------------------------------------------------------------------------
-_VIN_RE = re.compile(r"^[A-HJ-NPR-Z0-9]{17}$")
+# VIN is either the standard 17-char ISO 3779 form or a 12-char short form
+# we encounter on locally-imported vehicles. Both exclude I, O and Q.
+_VIN_RE = re.compile(r"^[A-HJ-NPR-Z0-9]{12}$|^[A-HJ-NPR-Z0-9]{17}$")
 # Uzbek tech passport: loose check — 8 chars, digits+letters
 _TECH_PASSPORT_RE = re.compile(r"^[A-Z0-9]{6,10}$")
 
@@ -103,7 +105,7 @@ def validate_vin(raw: Optional[str]) -> Optional[str]:
         return None
     stripped = _strip(str(raw))
     if not _VIN_RE.match(stripped):
-        raise PlateError("VIN must be 17 alnum characters (no I/O/Q)")
+        raise PlateError("VIN must be 12 or 17 alnum characters (no I/O/Q)")
     return stripped
 
 
