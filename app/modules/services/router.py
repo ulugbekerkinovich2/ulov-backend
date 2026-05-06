@@ -152,7 +152,9 @@ def _to_service_out(service, items=None) -> ServiceOut:
     
     if hasattr(service, "center") and service.center:
         out.center_name = service.center.name
-    
+        out.center_address = getattr(service.center, "address", None)
+        out.center_phone = getattr(service.center, "phone", None)
+
     if hasattr(service, "mechanic") and service.mechanic:
         out.mechanic_name = service.mechanic.full_name
 

@@ -157,6 +157,8 @@ class ServiceOut(BaseModel):
     items: List[ServiceItemOut] = Field(default_factory=list)
     car: Optional[ServiceCarOut] = None
     center_name: Optional[str] = None
+    center_address: Optional[str] = None
+    center_phone: Optional[str] = None
     mechanic_name: Optional[str] = None
     # Display name of whoever first moved the service into in_progress —
     # populated from the audit-style transition row. When a mechanic is
