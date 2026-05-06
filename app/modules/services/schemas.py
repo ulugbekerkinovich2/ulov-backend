@@ -158,6 +158,12 @@ class ServiceOut(BaseModel):
     car: Optional[ServiceCarOut] = None
     center_name: Optional[str] = None
     mechanic_name: Optional[str] = None
+    # Display name of whoever first moved the service into in_progress —
+    # populated from the audit-style transition row. When a mechanic is
+    # already attached this falls back to their name; for owner / admin
+    # starts it surfaces the user's full_name so the history card always
+    # has somebody to point at.
+    started_by_name: Optional[str] = None
 
     class Config:
         orm_mode = True

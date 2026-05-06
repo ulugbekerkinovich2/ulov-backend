@@ -86,9 +86,52 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+def _started_by_name(service) -> Optional[str]:
+    """Display name of whoever first moved this service into in_progress.
+
+    Three buckets the frontend cares about:
+      * mechanic auto-claimed → service.mechanic.full_name (also surfaced
+        as mechanic_name; emitted here too so the UI has a single
+        "started_by" field to render)
+      * owner / admin started → look up the transition's by_user_id in
+        the users table
+      * no in-progress transition yet → None
+    """
+    from sqlalchemy.orm import object_session
+
+    sess = object_session(service)
+    if sess is None:
+        return None
+    from app.modules.services.repository import list_transitions
+
+    started = next(
+        (t for t in list_transitions(sess, service.id) if t.to_status == "in_progress"),
+        None,
+    )
+    if started is None:
+        # Service hasn't been started yet — but if a mechanic was
+        # explicitly assigned (legacy intake / queue UI) still surface
+        # their name.
+        mech = getattr(service, "mechanic", None)
+        return mech.full_name if mech and mech.full_name else None
+    if started.by_user_id is not None:
+        from app.modules.auth import repository as auth_repo
+
+        user = auth_repo.get_user_by_id(sess, started.by_user_id)
+        if user and user.full_name:
+            return user.full_name
+    # Mechanic auto-claim path leaves by_user_id NULL but service.mechanic
+    # is attached.
+    mech = getattr(service, "mechanic", None)
+    if mech and mech.full_name:
+        return mech.full_name
+    return None
+
+
 def _to_service_out(service, items=None) -> ServiceOut:
     out = ServiceOut.from_orm(service)
     out.items = [ServiceItemOut.from_orm(i) for i in (items or [])]
+    out.started_by_name = _started_by_name(service)
     if hasattr(service, "car") and service.car:
         owner_out = None
         if hasattr(service.car, "owner") and service.car.owner:
