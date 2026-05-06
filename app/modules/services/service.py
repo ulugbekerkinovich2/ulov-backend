@@ -565,6 +565,15 @@ def add_condition_photo(
 ) -> ConditionImage:
     s = _get_or_404(db, service_id)
     _assert_can_mutate(db, s, user)
+    # condition_images.uploaded_by → users.id FK. Mechanic JWTs carry the
+    # mechanic's id in `sub`, not a users row — see _user_id_for_audit.
+    # Writing a mechanic id straight in violates the FK and 500s the
+    # request, which is exactly what staff hit when uploading intake
+    # photos. Record NULL for mechanics; the audit log keeps the trail.
     return repo.add_condition_image(
-        db, service_id=s.id, url=url, stage=stage, uploaded_by=user.id
+        db,
+        service_id=s.id,
+        url=url,
+        stage=stage,
+        uploaded_by=_user_id_for_audit(user),
     )
