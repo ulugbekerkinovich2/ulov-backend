@@ -114,6 +114,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_WRITE_PER_MINUTE: int = 30
     RATE_LIMIT_READ_PER_MINUTE: int = 120
 
+    # ---- Internal admin (sqladmin) ---------------------------------------
+    # Mount /admin only when both creds + secret are set. The session secret
+    # signs the login cookie; rotate it to invalidate everyone's session.
+    ADMIN_USERNAME: str = ""
+    ADMIN_PASSWORD: str = ""
+    ADMIN_SESSION_SECRET: str = ""
+
     # ---- Misc -------------------------------------------------------------
     DEFAULT_LANGUAGE: str = "uz"
     TIMEZONE: str = "Asia/Tashkent"

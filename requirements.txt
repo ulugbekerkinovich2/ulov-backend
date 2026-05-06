@@ -38,3 +38,9 @@ orjson>=3.9,<4
 python-dotenv>=1.0,<2
 email-validator>=2.0,<3
 phonenumbers>=8.13,<9
+
+# Internal admin (devops/DBA UI mounted at /admin) — sqladmin is the
+# ready-made FastAPI admin panel. Pin <0.17: 0.17+ requires SQLAlchemy 2.x
+# and Python 3.9, both of which are out of range for this project today.
+sqladmin>=0.14,<0.17
+itsdangerous>=2.1,<3

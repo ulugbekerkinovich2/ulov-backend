@@ -123,6 +123,11 @@ def create_app() -> FastAPI:
     # ---- Routers ------------------------------------------------------------
     app.include_router(api_router)
 
+    # ---- Internal admin (sqladmin) — mounted at /admin when configured -----
+    from app.admin import mount_admin  # local import: avoid cycle at module load
+
+    mount_admin(app)
+
     # ---- Health / meta ------------------------------------------------------
     @app.get("/health/live", tags=["meta"], include_in_schema=False)
     def health_live() -> dict:
