@@ -164,6 +164,10 @@ class ServiceOut(BaseModel):
     # starts it surfaces the user's full_name so the history card always
     # has somebody to point at.
     started_by_name: Optional[str] = None
+    # Condition (intake / during / after) photos attached to the service.
+    # Populated by routes that explicitly opt in (e.g. vehicle history) so
+    # the queue list stays light.
+    condition_images: List[ConditionPhotoOut] = Field(default_factory=list)
 
     class Config:
         orm_mode = True

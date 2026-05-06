@@ -362,7 +362,15 @@ def list_vehicle_history(
     services = svc.list_for_car(db, car_id, user, limit=limit, offset=offset)
     out: List[ServiceOut] = []
     for s in services:
-        out.append(_to_service_out(s, svc.list_items(db, s.id, user)))
+        so = _to_service_out(s, svc.list_items(db, s.id, user))
+        # History cards expand to show intake / during / after photos —
+        # bundle them on this route so the UI doesn't have to N+1 fetch
+        # one endpoint per service. The queue route stays light.
+        so.condition_images = [
+            ConditionPhotoOut.from_orm(p)
+            for p in services_repo.list_condition_images(db, s.id)
+        ]
+        out.append(so)
     return out
 
 
