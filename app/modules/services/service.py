@@ -500,6 +500,13 @@ def transition(
             if elapsed > 0:
                 fields["paused_elapsed_s"] = (s.paused_elapsed_s or 0) + elapsed
             fields["paused_at"] = None
+        # Auto-claim: if a mechanic personally starts (or resumes) work on
+        # a service that has no mechanic assigned yet, attach them to the
+        # row. The intake flow no longer asks for a mechanic up front, so
+        # without this the "👤 mechanic" line on the history card would
+        # stay blank forever.
+        if user.role == "mechanic" and s.mechanic_id is None:
+            fields["mechanic_id"] = user.id
 
     elif to_status == sm.PAUSED:
         fields["paused_at"] = now
