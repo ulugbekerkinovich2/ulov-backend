@@ -508,7 +508,15 @@ def list_my_services(
     services = svc.list_mine(db, user, limit=limit, offset=offset)
     out: List[ServiceOut] = []
     for s in services:
-        out.append(_to_service_out(s, svc.list_items(db, s.id, user)))
+        so = _to_service_out(s, svc.list_items(db, s.id, user))
+        # Customer's live tracking sheet expands to show intake photos —
+        # bundle them here so the mobile app doesn't N+1 fetch one
+        # endpoint per service.
+        so.condition_images = [
+            ConditionPhotoOut.from_orm(p)
+            for p in services_repo.list_condition_images(db, s.id)
+        ]
+        out.append(so)
     return out
 
 
